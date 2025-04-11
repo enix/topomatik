@@ -1,6 +1,6 @@
 # Topomatik
 
-Topomatik automatically reflects your underlying infrastructure in Kubernetes node topology annotations, because manually updating topology is about as fun as untangling holiday lights. 🎄
+Topomatik automatically reflects your underlying infrastructure in Kubernetes node topology annotations, because manually updating topology is about as fun as untangling holiday lights 🎄
 
 Learn more about topology in Kubernetes:
 
