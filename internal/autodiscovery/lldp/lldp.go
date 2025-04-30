@@ -1,10 +1,14 @@
 package lldp
 
 import (
+	"errors"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/afpacket"
 	"github.com/google/gopacket/layers"
+	"github.com/vishvananda/netlink"
 	"golang.org/x/net/bpf"
+	"golang.org/x/sys/unix"
 )
 
 type LLDPDiscoveryService struct {
@@ -14,6 +18,12 @@ type LLDPDiscoveryService struct {
 }
 
 func (l *LLDPDiscoveryService) Watch() (dataChannel chan map[string]string, err error) {
+	if l.Interface == "" {
+		if l.Interface, err = getDefaultRouteInterfaceName(); err != nil {
+			return
+		}
+	}
+
 	l.tPacket, err = afpacket.NewTPacket(
 		afpacket.OptInterface(l.Interface),
 		afpacket.OptFrameSize(afpacket.DefaultFrameSize),
@@ -68,4 +78,24 @@ func (l *LLDPDiscoveryService) HandlePackets(dataChannel chan map[string]string)
 	}
 
 	l.tPacket.Close()
+}
+
+func getDefaultRouteInterfaceName() (string, error) {
+	routes, err := netlink.RouteList(nil, netlink.FAMILY_ALL)
+	if err != nil {
+		return "", err
+	}
+
+	for _, route := range routes {
+		ones, _ := route.Dst.Mask.Size()
+		if route.Dst == nil || (route.Dst.IP.IsUnspecified() && ones == 0) {
+			link, err := netlink.LinkByIndex(route.LinkIndex)
+			if err != nil {
+				return "", err
+			}
+			return link.Attrs().Name, nil
+		}
+	}
+
+	return "", errors.New("default route not found")
 }
