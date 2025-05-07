@@ -1,0 +1,71 @@
+# Default values for topomatik.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Topomatik yaml config
+config: {}
+
+image:
+  # -- Image repository. Also available: `quay.io/enix/k8s-gitlab-access`
+  repository: enix/topomatik
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image tag. Default chart appVersion
+  tag: ""
+
+# -- Specify secrets to be used when pulling server image
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # -- Whether a service account should be created for the server
+  create: true
+  # -- Whether to automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- Name of the service account to create
+  name: ""
+
+# -- Annotations to add to the topomatik pod
+podAnnotations: {}
+# -- Labels to add to the topomatik pod
+podLabels: {}
+# -- Security context for the topomatik pod
+podSecurityContext: {}
+# -- Security context for containers of the topomatik pod
+securityContext: {}
+
+resources:
+  {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

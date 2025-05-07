@@ -2,6 +2,7 @@ package lldp
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/afpacket"
@@ -23,6 +24,8 @@ func (l *LLDPDiscoveryService) Watch() (dataChannel chan map[string]string, err 
 			return
 		}
 	}
+
+	fmt.Println("lldp: using interface:", l.Interface)
 
 	l.tPacket, err = afpacket.NewTPacket(
 		afpacket.OptInterface(l.Interface),

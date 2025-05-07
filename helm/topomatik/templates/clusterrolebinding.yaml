@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-access-binding
+subjects:
+- kind: ServiceAccount
+  name: {{ include "topomatik.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: node-rw
+  apiGroup: rbac.authorization.k8s.io

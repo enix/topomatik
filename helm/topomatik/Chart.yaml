@@ -1,0 +1,26 @@
+apiVersion: v2
+name: topomatik
+description: You don't have to do anything, it's all Topomatik™!
+type: application
+annotations:
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/license: MIT
+  artifacthub.io/changes: ""
+  artifacthub.io/links: |
+    - name: Chart Sources
+      url: https://github.com/enix/topomatik/blob/main/helm/topomatik
+    - name: Helm Repository
+      url: https://charts.enix.io
+version: v0.0.0
+appVersion: v0.0.0
+home: https://github.com/enix/topomatik
+sources:
+  - https://github.com/enix/topomatik
+maintainers:
+  - name: Enix
+    email: contact@enix.fr
+    url: https://enix.io
+  - name: Paul Laffitte
+    email: paul.laffitte@enix.fr
+    url: https://github.com/paullaffitte

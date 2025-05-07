@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: topomatik-config
+data:
+  config.yaml: |
+    {{- .Values.config | toYaml | nindent 4 }}
