@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var Version = "dev"
+
 func main() {
 	var (
 		configPath     string
