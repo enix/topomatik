@@ -24,11 +24,25 @@ Learn more about topology in Kubernetes:
 
 LLDP (Link Layer Discovery Protocol) is a vendor-neutral Layer 2 protocol that enables network devices to automatically discover and share information about their identity, capabilities, and neighboring devices on a local network.
 
-It can be used in both bare-metal and virtualized environments to inform nodes about the underlying topology. In bare-metal environments, it must be enabled at the network device level (e.g., switches). In virtualized environments, you'll need to install the lldpd service on your hypervisors.
+It can be used in both bare-metal and virtualized environments to inform nodes about the underlying topology (eg: Proxmox PVE). In bare-metal environments, it must be enabled at the network device level (e.g., switches). In virtualized environments, you'll need to install the lldpd service on your hypervisors.
 
-#### Proxmox PVE setup
+#### Configuration
 
-Here is an example of installation of the `lldpd` service on your Proxmox PVEs.
+| Name      | Description                                                                                       | Default value |
+| --------- | ------------------------------------------------------------------------------------------------- | ------------- |
+| enabled   | Enable or disable this auto discovery engine                                                      | true          |
+| interface | Interface name to use for listen to LLDP frames or auto to use any interface with default gateway | auto          |
+
+#### Available template variables
+
+| Name             | Description        |
+| ---------------- | ------------------ |
+| lldp.hostname    | The SysName TLV    |
+| lldp.description | The SysDescription |
+
+#### Proxmox PVE setup example
+
+Topomatik can be used with Proxmox PVE using the lldpd. Just install it using `apt install lldpd`. The default configuration should be sufficient to advertise the TLV handled by Topomatik.
 
 ## 🤝 Contributing
 
