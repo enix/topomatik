@@ -4,15 +4,15 @@ Topomatik automatically reflects your underlying infrastructure in Kubernetes no
 
 Learn more about topology in Kubernetes:
 
-* https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone
-* https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+- https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone
+- https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
 
 ## ✨ Features
 
-* Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node annotations based on autodiscovered infrastructure
-* Multiple auto-discovery engines. Currently only LLDP is supported (more coming soon™)
-* Works with both virtualized and bare-metal nodes
-* Runs as a DaemonSet; updates topology even when nodes are live-migrated
+- Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node annotations based on autodiscovered infrastructure
+- Multiple auto-discovery engines. Currently only LLDP is supported (more coming soon™)
+- Works with both virtualized and bare-metal nodes
+- Runs as a DaemonSet; updates topology even when nodes are live-migrated
 
 ## 📦 Installation
 
