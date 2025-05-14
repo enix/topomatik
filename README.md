@@ -23,6 +23,47 @@ Learn more about topology in Kubernetes:
 
 ## 📦 Installation
 
+## TL;DR:
+
+```
+helm install my-release oci://quay.io/enix/charts/zfs-exporter
+```
+
+### Flux usage
+
+When using [Flux](https://fluxcd.io), you can use this `HelmRepository` object as repository for all ENIX projects:
+
+```
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: enix
+  namespace: default
+spec:
+  interval: 24h
+  type: oci
+  url: oci://quay.io/enix/charts
+```
+
+Then, you can create a `HelmRelease` object pointing to this repository:
+
+```
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: topomatik
+  namespace: topomatik
+spec:
+  chart:
+    spec:
+      chart: topomatik
+      sourceRef:
+        kind: HelmRepository
+        name: enix
+        namespace: default
+      version: 1.*
+```
+
 ## Configuration
 
 Topomatik is configured using a YAML file. Here's an example configuration:
