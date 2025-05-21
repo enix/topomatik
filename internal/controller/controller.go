@@ -7,6 +7,7 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/Masterminds/sprig"
 	"github.com/enix/topomatik/internal/autodiscovery"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,7 +19,7 @@ type Controller struct {
 	services            map[string]*autodiscovery.EngineHandler
 }
 
-func New(clientset *kubernetes.Clientset, annotationTemplates map[string]string) (_ *Controller, err error) {
+func New(clientset *kubernetes.Clientset, annotationTemplates map[string]string) (*Controller, error) {
 	controller := &Controller{
 		clientset:           clientset,
 		annotationTemplates: map[string]*template.Template{},
@@ -26,13 +27,13 @@ func New(clientset *kubernetes.Clientset, annotationTemplates map[string]string)
 	}
 
 	for annotation, tmpl := range annotationTemplates {
-		controller.annotationTemplates[annotation], err = template.New(annotation).Option("missingkey=error").Parse(tmpl)
-		if err != nil {
+		controller.annotationTemplates[annotation] = template.New(annotation).Funcs(sprig.FuncMap()).Option("missingkey=error")
+		if _, err := controller.annotationTemplates[annotation].Parse(tmpl); err != nil {
 			return nil, err
 		}
 	}
 
-	return controller, err
+	return controller, nil
 }
 
 func (c *Controller) Register(name string, service autodiscovery.Engine) {
