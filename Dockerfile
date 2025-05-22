@@ -31,9 +31,3 @@ COPY --from=build /build/topomatik /usr/local/bin/
 
 CMD [ "topomatik" ]
 
-ARG version=latest
-ARG vcs_ref
-ARG build_date
-LABEL org.opencontainers.image.version="$version" \
-  org.opencontainers.image.revision="$vcs_ref" \
-  org.opencontainers.image.created="$build_date"
