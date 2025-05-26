@@ -5,6 +5,8 @@ on:
     secrets:
       REPO_TOKEN:
         required: true
+      GH_TOKEN_PUBLISH_HELM_CHART:
+        required: true
     inputs:
       REPO_LOGIN:
         required: true
@@ -59,3 +61,36 @@ jobs:
           tags: |
             ${{ inputs.REPO_IMAGE }}:${{ inputs.VERSION }}
             ${{ inputs.REPO_IMAGE }}:latest
+
+      - name: Build helm chart
+        uses: appany/helm-oci-chart-releaser@v0.4.2
+        with:
+          path: helm/topomatik
+          name: topomatik
+          repository: enix/charts
+          tag: ${{ inputs.VERSION }}
+          app_version: ${{ inputs.VERSION }}
+          registry: quay.io
+          registry_username: ${{ inputs.REPO_LOGIN }}
+          registry_password: ${{ secrets.REPO_TOKEN }}
+          update_dependencies: 'true'
+
+      - name: Setup Oras
+        uses: oras-project/setup-oras@v1
+
+      - name: Generate Helm index and push it
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN_PUBLISH_HELM_CHART }}
+        run: |
+          # Create repo index file:
+          helm repo index .
+
+          # Replace HTTP URL by OCI URL
+          yq e ".entries.topomatik[0].urls[0] = \"oci://quay.io/enix/charts/topomatik:${{ inputs.VERSION }}\"" -i index.yaml
+
+          # Push index on topomatik repo:
+          mv index.yaml index-latest.yaml
+          oras push quay.io/enix/charts/topomatik:index-latest.yaml --artifact-type application/yaml index-latest.yaml:application/yaml
+
+          # Trigger index publish
+          #gh workflow run helmchart-publish.yml -f index_path=enix/charts/topomatik:index-latest.yaml --repo enix/helm-charts

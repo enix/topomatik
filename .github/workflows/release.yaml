@@ -63,6 +63,7 @@ jobs:
       VERSION: ${{ needs.semver.outputs.version }}
     secrets:
       REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+      GH_TOKEN_PUBLISH_HELM_CHART: ${{ secrets.GH_TOKEN_PUBLISH_HELM_CHART }}
 
   release:
     name: Semantic Version
