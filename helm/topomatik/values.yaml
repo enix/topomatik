@@ -7,7 +7,7 @@ config: {}
 
 image:
   # -- Image repository. Also available: `quay.io/enix/k8s-gitlab-access`
-  repository: enix/topomatik
+  repository: quay.io/enix/topomatik
   # -- Image pull policy
   pullPolicy: IfNotPresent
   # -- Image tag. Default chart appVersion
