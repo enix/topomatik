@@ -54,6 +54,7 @@ metadata:
   name: topomatik
   namespace: topomatik
 spec:
+  interval: 1m0s
   chart:
     spec:
       chart: topomatik
