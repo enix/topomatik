@@ -73,3 +73,6 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# The optional priority class to be used for the Topomatik pods.
+priorityClassName: ""
