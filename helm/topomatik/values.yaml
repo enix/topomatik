@@ -3,7 +3,11 @@
 # Declare variables to be passed into your templates.
 
 # -- Topomatik yaml config
-config: {}
+config:
+  annotationTemplates:
+    topology.kubernetes.io/zone: "{{ .lldp.hostname }}"
+  lldp:
+    enabled: true
 
 image:
   # -- Image repository. Also available: `quay.io/enix/k8s-gitlab-access`
