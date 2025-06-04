@@ -7,7 +7,7 @@
         <img src="https://img.shields.io/badge/Brought%20to%20you%20by-ENIX-%23377dff?labelColor=888&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAQAAAC1QeVaAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQfkBAkQIg/iouK/AAABZ0lEQVQY0yXBPU8TYQDA8f/zcu1RSDltKliD0BKNECYZmpjgIAOLiYtubn4EJxI/AImzg3E1+AGcYDIMJA7lxQQQQRAiSSFG2l457+655x4Gfz8B45zwipWJ8rPCQ0g3+p9Pj+AlHxHjnLHAbvPW2+GmLoBN+9/+vNlfGeU2Auokd8Y+VeYk/zk6O2fP9fcO8hGpN/TUbxpiUhJiEorTgy+6hUlU5N1flK+9oIJHiKNCkb5wMyOFw3V9o+zN69o0Exg6ePh4/GKr6s0H72Tc67YsdXbZ5gENNjmigaXbMj0tzEWrZNtqigva5NxjhFP6Wfw1N1pjqpFaZQ7FAY6An6zxTzHs0BGqY/NQSnxSBD6WkDRTf3O0wG2Ztl/7jaQEnGNxZMdy2yET/B2xfGlDagQE1OgRRvL93UOHqhLnesPKqJ4NxLLn2unJgVka/HBpbiIARlHFq1n/cWlMZMne1ZfyD5M/Aa4BiyGSwP4Jl3UAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDQtMDlUMTQ6MzQ6MTUrMDI6MDDBq8/nAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA0LTA5VDE0OjM0OjE1KzAyOjAwsPZ3WwAAAABJRU5ErkJggg==" /></a>
 </p>
 
-Topomatik automatically reflects your underlying infrastructure in Kubernetes node topology annotations, because manually updating topology is about as fun as untangling holiday lights 🎄
+Topomatik automatically reflects your underlying infrastructure in Kubernetes node topology labels, because manually updating topology is about as fun as untangling holiday lights 🎄
 
 Learn more about topology in Kubernetes:
 
@@ -16,7 +16,7 @@ Learn more about topology in Kubernetes:
 
 ## ✨ Features
 
-- Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node annotations based on autodiscovered infrastructure
+- Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node labels based on autodiscovered infrastructure
 - Multiple auto-discovery engines. Currently only LLDP is supported (more coming soon™)
 - Works with both virtualized and bare-metal nodes
 - Runs as a DaemonSet; updates topology even when nodes are live-migrated
@@ -70,7 +70,7 @@ spec:
 Topomatik is configured using a YAML file. Here's an example configuration:
 
 ```
-annotationTemplates:
+labelTemplates:
   topology.kubernetes.io/zone: "{{ .lldp.hostname }}"
   topology.kubernetes.io/region: "{{ .lldp.description | regexp.Find "location: [^ ]" }}
 
@@ -79,9 +79,9 @@ lldp:
   interface: auto
 ```
 
-### Annotation Templates
+### Label Templates
 
-The `annotationTemplates` section defines which Kubernetes annotations Topomatik will manage. Each value is a Go template that will be rendered to determine the annotation value.
+The `labelsTemplates` section defines which Kubernetes labels Topomatik will manage. Each value is a Go template that will be rendered to determine the label value.
 
 The [Sprig library](http://masterminds.github.io/sprig/) is available for advanced template operations, giving you access to string manipulation, regular expressions, and more.
 

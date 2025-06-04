@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	AnnotationTemplates map[string]string `yaml:"annotationTemplates"`
+	LabelTemplates map[string]string `yaml:"labelTemplates"`
 
 	LLDP LLDP `yaml:"lldp"`
 }

@@ -15,20 +15,20 @@ import (
 
 type Controller struct {
 	clientset           *kubernetes.Clientset
-	annotationTemplates map[string]*template.Template
+	labelTemplates map[string]*template.Template
 	services            map[string]*autodiscovery.EngineHandler
 }
 
-func New(clientset *kubernetes.Clientset, annotationTemplates map[string]string) (*Controller, error) {
+func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Controller, error) {
 	controller := &Controller{
 		clientset:           clientset,
-		annotationTemplates: map[string]*template.Template{},
+		labelTemplates: map[string]*template.Template{},
 		services:            map[string]*autodiscovery.EngineHandler{},
 	}
 
-	for annotation, tmpl := range annotationTemplates {
-		controller.annotationTemplates[annotation] = template.New(annotation).Funcs(sprig.FuncMap()).Option("missingkey=error")
-		if _, err := controller.annotationTemplates[annotation].Parse(tmpl); err != nil {
+	for label, tmpl := range labelTemplates {
+		controller.labelTemplates[label] = template.New(label).Funcs(sprig.FuncMap()).Option("missingkey=error")
+		if _, err := controller.labelTemplates[label].Parse(tmpl); err != nil {
 			return nil, err
 		}
 	}
@@ -65,14 +65,14 @@ func (c *Controller) Start() error {
 			continue
 		}
 
-		for annotation, tmpl := range c.annotationTemplates {
+		for label, tmpl := range c.labelTemplates {
 			value := &bytes.Buffer{}
 			err := tmpl.Execute(value, data)
 			if err != nil {
-				fmt.Printf("could not render template for %s: %s\n", annotation, err.Error())
+				fmt.Printf("could not render template for %s: %s\n", label, err.Error())
 			} else {
-				node.Annotations[annotation] = value.String()
-				fmt.Printf("%s: %s\n", annotation, value)
+				node.Labels[label] = value.String()
+				fmt.Printf("%s: %s\n", label, value)
 			}
 		}
 

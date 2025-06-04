@@ -47,7 +47,7 @@ func main() {
 		panic(err)
 	}
 
-	ctrl, err := controller.New(k8sClientset, config.AnnotationTemplates)
+	ctrl, err := controller.New(k8sClientset, config.LabelTemplates)
 	if err != nil {
 		panic(err)
 	}
