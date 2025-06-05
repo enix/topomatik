@@ -1,0 +1,15 @@
+image:
+  # -- Image repository. Also available: `quay.io/enix/k8s-gitlab-access`
+  repository: harbor.enix.io/plaffitt-dev-public/topomatik
+  # -- Image pull policy
+  # pullPolicy: Always
+  # -- Image tag. Default chart appVersion
+  tag: debug-012
+
+config:
+  annotationTemplates:
+    topology.plaffitt.enix.io/zone: "{{ .lldp.hostname }}"
+    topology.plaffitt.enix.io/region: "{{ .lldp.description }}"
+
+  lldp:
+    enabled: true

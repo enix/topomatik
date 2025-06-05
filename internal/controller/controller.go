@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/template"
@@ -10,20 +11,21 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/enix/topomatik/internal/autodiscovery"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
 type Controller struct {
-	clientset           *kubernetes.Clientset
+	clientset      *kubernetes.Clientset
 	labelTemplates map[string]*template.Template
-	services            map[string]*autodiscovery.EngineHandler
+	services       map[string]*autodiscovery.EngineHandler
 }
 
 func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Controller, error) {
 	controller := &Controller{
-		clientset:           clientset,
+		clientset:      clientset,
 		labelTemplates: map[string]*template.Template{},
-		services:            map[string]*autodiscovery.EngineHandler{},
+		services:       map[string]*autodiscovery.EngineHandler{},
 	}
 
 	for label, tmpl := range labelTemplates {
@@ -65,24 +67,40 @@ func (c *Controller) Start() error {
 			continue
 		}
 
+		labels := map[string]string{}
 		for label, tmpl := range c.labelTemplates {
 			value := &bytes.Buffer{}
 			err := tmpl.Execute(value, data)
 			if err != nil {
 				fmt.Printf("could not render template for %s: %s\n", label, err.Error())
 			} else {
-				node.Labels[label] = value.String()
-				fmt.Printf("%s: %s\n", label, value)
+				if node.Labels[label] != value.String() {
+					labels[label] = value.String()
+					fmt.Printf("%s: %s\n", label, value)
+				}
 			}
 		}
 
-		_, err = c.clientset.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
+		if len(labels) == 0 {
+			continue
+		}
+
+		patch := map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"labels": labels,
+			},
+		}
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			fmt.Printf("failed to marshal patch: %s\n", err)
+			continue
+		}
+
+		_, err = c.clientset.CoreV1().Nodes().Patch(context.Background(), node.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 		if err != nil {
 			fmt.Printf("could not update node %s: %s\n", nodeName, err.Error())
 			continue
 		}
-
-		fmt.Println("")
 	}
 
 	return nil
