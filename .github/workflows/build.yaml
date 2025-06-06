@@ -93,4 +93,4 @@ jobs:
           oras push quay.io/enix/charts/topomatik:index-latest.yaml --artifact-type application/yaml index-latest.yaml:application/yaml
 
           # Trigger index publish
-          #gh workflow run helmchart-publish.yml -f index_path=enix/charts/topomatik:index-latest.yaml --repo enix/helm-charts
+          gh workflow run helmchart-publish.yml -f index_path=enix/charts/topomatik:index-latest.yaml --repo enix/helm-charts
