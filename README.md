@@ -26,7 +26,7 @@ Learn more about topology in Kubernetes:
 ## TL;DR:
 
 ```
-helm install my-release oci://quay.io/enix/charts/zfs-exporter
+helm install my-release oci://quay.io/enix/charts/topomatik
 ```
 
 ### Flux usage
