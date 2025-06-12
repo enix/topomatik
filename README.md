@@ -64,6 +64,16 @@ spec:
         namespace: default
       version: 1.*
 ```
+## Roadmap
+
+- [ ] Refactor discovery engine reconciliation loop #1
+- [ ] DMI/BIOS discovery engine #2
+- [ ] Local file / HTTP discovery engine #3
+- [ ] Hostname / node name discovery engine #4
+- [ ] Network config discovery engine #5
+- [ ] Taint management #6
+- [ ] Prometheus Exporter #7
+- [ ] Better RBAC / admission webhook #8
 
 ## Configuration
 
