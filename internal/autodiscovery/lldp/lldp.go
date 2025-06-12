@@ -18,7 +18,7 @@ type LLDPDiscoveryService struct {
 	tPacket *afpacket.TPacket
 }
 
-func (l *LLDPDiscoveryService) Watch() (dataChannel chan map[string]string, err error) {
+func (l *LLDPDiscoveryService) Setup() (err error) {
 	if l.Interface == "" {
 		if l.Interface, err = getDefaultRouteInterfaceName(); err != nil {
 			return
@@ -54,13 +54,10 @@ func (l *LLDPDiscoveryService) Watch() (dataChannel chan map[string]string, err 
 		return
 	}
 
-	dataChannel = make(chan map[string]string)
-	go l.HandlePackets(dataChannel)
-
 	return
 }
 
-func (l *LLDPDiscoveryService) HandlePackets(dataChannel chan map[string]string) {
+func (l *LLDPDiscoveryService) Watch(callback func(data map[string]string)) {
 	packetSource := gopacket.NewPacketSource(l.tPacket, layers.LayerTypeEthernet)
 	for packet := range packetSource.Packets() {
 		if lldpLayer := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldpLayer != nil {
@@ -76,7 +73,7 @@ func (l *LLDPDiscoveryService) HandlePackets(dataChannel chan map[string]string)
 				}
 			}
 
-			dataChannel <- data
+			callback(data)
 		}
 	}
 
