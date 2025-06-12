@@ -18,14 +18,19 @@ import (
 type Controller struct {
 	clientset      *kubernetes.Clientset
 	labelTemplates map[string]*template.Template
-	services       map[string]*autodiscovery.EngineHandler
+	engines        map[string]autodiscovery.Engine
+}
+
+type EnginePayload struct {
+	EngineName string
+	Data       map[string]string
 }
 
 func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Controller, error) {
 	controller := &Controller{
 		clientset:      clientset,
 		labelTemplates: map[string]*template.Template{},
-		services:       map[string]*autodiscovery.EngineHandler{},
+		engines:        map[string]autodiscovery.Engine{},
 	}
 
 	for label, tmpl := range labelTemplates {
@@ -38,28 +43,34 @@ func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Co
 	return controller, nil
 }
 
-func (c *Controller) Register(name string, service autodiscovery.Engine) {
-	c.services[name] = autodiscovery.NewServiceHandler(service)
+func (c *Controller) Register(name string, engine autodiscovery.Engine) {
+	c.engines[name] = engine
 }
 
 func (c *Controller) Start() error {
-	update := make(chan struct{})
 	nodeName := os.Getenv("NODE_NAME")
 	println("NODE_NAME:", nodeName)
 
-	for _, service := range c.services {
-		if err := service.Start(); err != nil {
+	dataChannel := make(chan EnginePayload)
+
+	for name, engine := range c.engines {
+		callback := func(data map[string]string) {
+			dataChannel <- EnginePayload{
+				EngineName: name,
+				Data:       data,
+			}
+		}
+
+		if err := engine.Setup(); err != nil {
 			return err
 		}
 
-		go service.KeepUpdated(update)
+		go engine.Watch(callback)
 	}
 
-	for range update {
+	for payload := range dataChannel {
 		data := map[string]map[string]string{}
-		for name, service := range c.services {
-			data[name] = service.Data
-		}
+		data[payload.EngineName] = payload.Data
 
 		node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
 		if err != nil {
