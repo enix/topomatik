@@ -3,18 +3,19 @@ package config
 import (
 	"os"
 
+	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
 	LabelTemplates map[string]string `yaml:"labelTemplates"`
 
-	LLDP LLDP `yaml:"lldp"`
+	LLDP EngineConfig[lldp.Config] `yaml:"lldp"`
 }
 
-type LLDP struct {
-	Enabled   bool   `yaml:"enabled"`
-	Interface string `yaml:"interface"`
+type EngineConfig[T any] struct {
+	Config  T    `yaml:",inline"`
+	Enabled bool `yaml:"enabled"`
 }
 
 func Load(path string) (*Config, error) {
