@@ -61,5 +61,5 @@ func main() {
 		ctrl.Register("files", &files.FilesDiscoveryEngine{Config: config.Files})
 	}
 
-	panic(ctrl.Start())
+	panic(ctrl.Start(config.MinimumReconciliationInterval))
 }
