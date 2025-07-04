@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"text/template"
+	"time"
 
 	"github.com/Masterminds/sprig"
 	"github.com/enix/topomatik/internal/autodiscovery"
@@ -23,6 +24,7 @@ type Controller struct {
 	labelTemplates map[string]*template.Template
 	engines        map[string]autodiscovery.Engine
 	discoveryData  map[string]map[string]string
+	swd            *SometimesWithDebounce
 }
 
 type EnginePayload struct {
@@ -53,8 +55,9 @@ func (c *Controller) Register(name string, engine autodiscovery.Engine) {
 	c.engines[name] = engine
 }
 
-func (c *Controller) Start() error {
+func (c *Controller) Start(minimumReconciliationInterval int) error {
 	println("NODE_NAME:", c.nodeName)
+	fmt.Printf("Minimum reconciliation interval: %ds\n", minimumReconciliationInterval)
 
 	dataChannel := make(chan EnginePayload)
 
@@ -79,6 +82,8 @@ func (c *Controller) Start() error {
 
 	c.watchNode()
 
+	c.swd = NewSometimesWithDebounce(time.Duration(minimumReconciliationInterval) * time.Second)
+
 	for payload := range dataChannel {
 		c.discoveryData[payload.EngineName] = payload.Data
 
@@ -88,9 +93,7 @@ func (c *Controller) Start() error {
 			continue
 		}
 
-		if err := c.reconcileNode(node); err != nil {
-			fmt.Println(err.Error())
-		}
+		c.safeReconcileNode(node)
 	}
 
 	return nil
@@ -114,16 +117,23 @@ func (c *Controller) watchNode() error {
 			}
 
 			fmt.Println("received a node update, triggering reconciliation")
-			if err := c.reconcileNode(node); err != nil {
-				fmt.Println(err.Error())
-			}
+			c.safeReconcileNode(node)
 		}
 	}()
 
 	return nil
 }
 
+func (c *Controller) safeReconcileNode(node *corev1.Node) {
+	c.swd.Do(func() {
+		if err := c.reconcileNode(node); err != nil {
+			fmt.Println(err.Error())
+		}
+	})
+}
+
 func (c *Controller) reconcileNode(node *corev1.Node) error {
+	fmt.Println(time.Now())
 	labels := map[string]string{}
 	for label, tmpl := range c.labelTemplates {
 		value := &bytes.Buffer{}

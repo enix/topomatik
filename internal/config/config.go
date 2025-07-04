@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	LabelTemplates map[string]string `yaml:"labelTemplates"`
+	LabelTemplates                map[string]string `yaml:"labelTemplates"`
+	MinimumReconciliationInterval int               `yaml:"minimumReconciliationInterval"`
 
 	LLDP  EngineConfig[lldp.Config] `yaml:"lldp"`
 	Files files.Config              `yaml:"files"`
@@ -29,6 +30,10 @@ func Load(path string) (*Config, error) {
 	var config Config
 	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
 		return nil, err
+	}
+
+	if config.MinimumReconciliationInterval == 0 {
+		config.MinimumReconciliationInterval = 60
 	}
 
 	return &config, nil
