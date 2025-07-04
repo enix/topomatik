@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 
+	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"gopkg.in/yaml.v2"
 )
@@ -10,7 +11,8 @@ import (
 type Config struct {
 	LabelTemplates map[string]string `yaml:"labelTemplates"`
 
-	LLDP EngineConfig[lldp.Config] `yaml:"lldp"`
+	LLDP  EngineConfig[lldp.Config] `yaml:"lldp"`
+	Files files.Config              `yaml:"files"`
 }
 
 type EngineConfig[T any] struct {

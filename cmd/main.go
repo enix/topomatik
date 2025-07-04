@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"github.com/enix/topomatik/internal/config"
 	"github.com/enix/topomatik/internal/controller"
@@ -54,6 +55,10 @@ func main() {
 
 	if config.LLDP.Enabled {
 		ctrl.Register("lldp", &lldp.LLDPDiscoveryEngine{Config: config.LLDP.Config})
+	}
+
+	if len(config.Files) > 0 {
+		ctrl.Register("files", &files.FilesDiscoveryEngine{Config: config.Files})
 	}
 
 	panic(ctrl.Start())

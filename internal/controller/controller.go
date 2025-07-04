@@ -59,7 +59,11 @@ func (c *Controller) Start() error {
 	dataChannel := make(chan EnginePayload)
 
 	for name, engine := range c.engines {
-		callback := func(data map[string]string) {
+		callback := func(data map[string]string, err error) {
+			if err != nil {
+				fmt.Printf("%s engine encountered an error: %s\n", name, err.Error())
+				return
+			}
 			dataChannel <- EnginePayload{
 				EngineName: name,
 				Data:       data,
