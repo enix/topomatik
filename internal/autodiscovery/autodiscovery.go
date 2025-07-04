@@ -2,5 +2,5 @@ package autodiscovery
 
 type Engine interface {
 	Setup() error
-	Watch(func(data map[string]string))
+	Watch(func(data map[string]string, err error))
 }

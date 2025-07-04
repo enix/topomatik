@@ -61,7 +61,7 @@ func (l *LLDPDiscoveryEngine) Setup() (err error) {
 	return
 }
 
-func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string)) {
+func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
 	packetSource := gopacket.NewPacketSource(l.tPacket, layers.LayerTypeEthernet)
 	for packet := range packetSource.Packets() {
 		if lldpLayer := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldpLayer != nil {
@@ -77,7 +77,7 @@ func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string)) {
 				}
 			}
 
-			callback(data)
+			callback(data, nil)
 		}
 	}
 
