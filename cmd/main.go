@@ -53,9 +53,7 @@ func main() {
 	}
 
 	if config.LLDP.Enabled {
-		ctrl.Register("lldp", &lldp.LLDPDiscoveryEngine{
-			Interface: config.LLDP.Interface,
-		})
+		ctrl.Register("lldp", &lldp.LLDPDiscoveryEngine{Config: config.LLDP.Config})
 	}
 
 	panic(ctrl.Start())

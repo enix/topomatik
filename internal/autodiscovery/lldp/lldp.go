@@ -12,8 +12,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+type Config struct {
+	Interface string `yaml:"interface"`
+}
+
 type LLDPDiscoveryEngine struct {
-	Interface string
+	Config
 
 	tPacket *afpacket.TPacket
 }
