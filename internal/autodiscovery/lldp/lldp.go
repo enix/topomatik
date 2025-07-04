@@ -12,13 +12,13 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-type LLDPDiscoveryService struct {
+type LLDPDiscoveryEngine struct {
 	Interface string
 
 	tPacket *afpacket.TPacket
 }
 
-func (l *LLDPDiscoveryService) Setup() (err error) {
+func (l *LLDPDiscoveryEngine) Setup() (err error) {
 	if l.Interface == "" {
 		if l.Interface, err = getDefaultRouteInterfaceName(); err != nil {
 			return
@@ -57,7 +57,7 @@ func (l *LLDPDiscoveryService) Setup() (err error) {
 	return
 }
 
-func (l *LLDPDiscoveryService) Watch(callback func(data map[string]string)) {
+func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string)) {
 	packetSource := gopacket.NewPacketSource(l.tPacket, layers.LayerTypeEthernet)
 	for packet := range packetSource.Packets() {
 		if lldpLayer := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldpLayer != nil {
