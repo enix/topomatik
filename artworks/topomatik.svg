@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="800"
+   height="800"
+   viewBox="0 0 211.66666 211.66667"
+   version="1.1"
+   id="svg5315"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="topomatik.svg"
+   inkscape:export-filename="topomatik.png"
+   inkscape:export-xdpi="42.833519"
+   inkscape:export-ydpi="42.833519"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview5317"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.51685428"
+     inkscape:cx="531.09746"
+     inkscape:cy="304.72805"
+     inkscape:window-width="1720"
+     inkscape:window-height="1369"
+     inkscape:window-x="1720"
+     inkscape:window-y="32"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer3" />
+  <defs
+     id="defs5312">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient6902">
+      <stop
+         style="stop-color:#003580;stop-opacity:1;"
+         offset="0"
+         id="stop6900" />
+      <stop
+         style="stop-color:#0063c0;stop-opacity:1;"
+         offset="1"
+         id="stop6898" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6902"
+       id="linearGradient6904"
+       x1="23.409763"
+       y1="100.40362"
+       x2="135.6971"
+       y2="189.94978"
+       gradientUnits="userSpaceOnUse" />
+    <filter
+       inkscape:collect="always"
+       style="color-interpolation-filters:sRGB"
+       id="filter33613"
+       x="-0.12913011"
+       y="-0.10434756"
+       width="1.2582602"
+       height="1.2086951">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="3.5799688"
+         id="feGaussianBlur33615" />
+    </filter>
+  </defs>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="outline"
+     style="display:inline"
+     transform="translate(-4.6667637,-0.396594)">
+    <path
+       id="path5905-1"
+       style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#00222b;stroke-width:7.5;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:transform-center-x="1.0390959e-06"
+       inkscape:transform-center-y="-3.7409734"
+       d="m 110.5001,22.259084 a 12.160254,12.160254 0 0 0 -12.159984,12.1605 12.160254,12.160254 0 0 0 1.20406,5.27616 l -37.157424,17.894 a 12.160254,12.160254 0 0 0 -10.954887,-6.88485 12.160254,12.160254 0 0 0 -12.160498,12.1605 12.160254,12.160254 0 0 0 9.45472,11.85509 l -9.177218,40.207356 a 12.160254,12.160254 0 0 0 -2.705777,-0.30541 12.160254,12.160254 0 0 0 -12.160498,12.15999 12.160254,12.160254 0 0 0 12.160498,12.16049 12.160254,12.160254 0 0 0 7.581449,-2.65306 h 5.17e-4 l 25.712638,32.24299 a 12.160254,12.160254 0 0 0 -4.578528,9.50743 12.160254,12.160254 0 0 0 12.160498,12.1605 12.160254,12.160254 0 0 0 12.15998,-12.1605 h 41.240904 a 12.160254,12.160254 0 0 0 12.15998,12.1605 12.160254,12.160254 0 0 0 12.1605,-12.1605 12.160254,12.160254 0 0 0 -4.57905,-9.50691 l 25.71316,-32.24351 a 12.160254,12.160254 0 0 0 5.1e-4,0 12.160254,12.160254 0 0 0 7.58145,2.65306 12.160254,12.160254 0 0 0 12.1605,-12.16049 12.160254,12.160254 0 0 0 -12.1605,-12.15999 12.160254,12.160254 0 0 0 -2.70577,0.3049 l -9.1767,-40.206846 a 12.160254,12.160254 0 0 0 9.4542,-11.85509 12.160254,12.160254 0 0 0 -12.15998,-12.1605 12.160254,12.160254 0 0 0 -10.95644,6.88433 l -37.15639,-17.89348 a 12.160254,12.160254 0 0 0 1.20458,-5.27616 12.160254,12.160254 0 0 0 -12.1605,-12.1605 z" />
+  </g>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-4.6667637,-0.396594)">
+    <path
+       sodipodi:type="star"
+       style="opacity:1;fill:url(#linearGradient6904);fill-opacity:1;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5905"
+       inkscape:flatsided="true"
+       sodipodi:sides="7"
+       sodipodi:cx="82.478241"
+       sodipodi:cy="147.50916"
+       sodipodi:r1="75.551422"
+       sodipodi:r2="68.069481"
+       sodipodi:arg1="-1.5707963"
+       sodipodi:arg2="-1.1219974"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 82.478243,71.957733 59.068477,28.445887 14.58871,63.91731 -40.87666,51.25771 -65.561064,-1e-5 -40.8766557,-51.2577 14.5887117,-63.91732 z"
+       inkscape:transform-center-x="1.0390959e-06"
+       inkscape:transform-center-y="-3.7409734"
+       transform="translate(28.021454,-37.538174)" />
+    <circle
+       style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959"
+       cx="110.49969"
+       cy="34.419559"
+       r="12.160254" />
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959-7"
+       cx="51.431217"
+       cy="62.86544"
+       r="12.160254" />
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959-4"
+       cx="36.842503"
+       cy="126.78275"
+       r="12.160254" />
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959-1"
+       cx="77.719162"
+       cy="178.04047"
+       r="12.160254" />
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959-8"
+       cx="143.28023"
+       cy="178.04047"
+       r="12.160254" />
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959-5"
+       cx="184.15689"
+       cy="126.78275"
+       r="12.160254" />
+    <circle
+       style="fill:#ffffff;fill-rule:evenodd;stroke-width:3;stroke-linecap:round"
+       id="path5959-9"
+       cx="169.56818"
+       cy="62.86544"
+       r="12.160254" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Foreground"
+     transform="translate(-4.6667637,-0.396594)">
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;opacity:0.8250497"
+       d="m 36.842501,126.78275 c 0,0 78.172599,-29.988585 147.314379,0"
+       id="path17601" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;opacity:0.8250497"
+       d="m 110.4997,34.419558 c 0,0 10.33443,63.401508 73.65718,92.363192"
+       id="path17595" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:118.816px;line-height:1.25;font-family:sans-serif;mix-blend-mode:normal;fill:#333333;fill-opacity:1;stroke:none;stroke-width:2.97043;filter:url(#filter33613)"
+       x="74.855293"
+       y="147.39967"
+       id="text17716-3"><tspan
+         sodipodi:role="line"
+         id="tspan17714-4"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu Bold';fill:#333333;fill-opacity:1;stroke-width:2.97043"
+         x="74.855293"
+         y="147.39967">T</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:118.816px;line-height:1.25;font-family:sans-serif;fill:#ffcc33;fill-opacity:1;stroke:none;stroke-width:2.97;stroke-dasharray:none"
+       x="74.855293"
+       y="147.39967"
+       id="text17716"><tspan
+         sodipodi:role="line"
+         id="tspan17714"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu Bold';fill:#ffcc33;fill-opacity:1;stroke-width:2.97;stroke-dasharray:none"
+         x="74.855293"
+         y="147.39967">T</tspan></text>
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;opacity:0.8250497"
+       d="m 169.56818,62.865438 c 0,0 -97.992251,16.983038 -91.84902,115.175022"
+       id="path17597" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;opacity:0.8250497"
+       d="m 51.431216,62.865438 c 0,0 100.949404,28.278788 91.849014,115.175022"
+       id="path17599" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;fill-opacity:1;opacity:0.8250497"
+       d="m 51.431216,62.865438 c 0,0 62.589344,38.205342 26.287944,115.175022"
+       id="path17603" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:73.2724px;line-height:1.25;font-family:sans-serif;fill:#00222b;fill-opacity:1;stroke:none;stroke-width:1.83182"
+       x="-36.667053"
+       y="269.93271"
+       id="text30209"><tspan
+         sodipodi:role="line"
+         id="tspan30207"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:condensed;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu Bold Condensed';stroke-width:1.83182;fill:#00222b;fill-opacity:1"
+         x="-36.667053"
+         y="269.93271">Topomatik</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:12.9365px;line-height:1.25;font-family:sans-serif;fill:#00222b;fill-opacity:1;stroke:none;stroke-width:0.323415"
+       x="47.288605"
+       y="286.05835"
+       id="text30209-4"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu Condensed';fill:#00222b;fill-opacity:1;stroke-width:0.323415"
+         x="47.288605"
+         y="286.05835"
+         id="tspan45652">You don't have to do anything, it's all Topomatik™!</tspan></text>
+    <path
+       id="path33565"
+       style="font-style:normal;font-weight:normal;font-size:118.816px;line-height:1.25;font-family:sans-serif;fill:#ffcc33;fill-opacity:1;stroke:none;stroke-width:2.97;stroke-dasharray:none"
+       d="m 77.231581,65.060184 v 13.782621 h 25.189169 v 1.5875 h 16.1587 v -1.5875 h 25.18916 V 65.060184 Z" />
+  </g>
+</svg>
