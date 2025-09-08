@@ -19,17 +19,11 @@ import (
 )
 
 type Controller struct {
-	nodeName              string
-	clientset             *kubernetes.Clientset
-	labelTemplates        map[string]*template.Template
-	engines               map[string]autodiscovery.Engine
-	discoveryData         map[string]map[string]string
-	reconciliationHandler *SometimesWithDebounceChannel
-}
-
-type EnginePayload struct {
-	EngineName string
-	Data       map[string]string
+	nodeName       string
+	clientset      *kubernetes.Clientset
+	labelTemplates map[string]*template.Template
+	engines        []*autodiscovery.Engine
+	discoveryData  map[string]map[string]string
 }
 
 func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Controller, error) {
@@ -37,8 +31,8 @@ func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Co
 		nodeName:       os.Getenv("NODE_NAME"),
 		clientset:      clientset,
 		labelTemplates: map[string]*template.Template{},
-		engines:        map[string]autodiscovery.Engine{},
-		discoveryData:  make(map[string]map[string]string),
+		engines:        []*autodiscovery.Engine{},
+		discoveryData:  map[string]map[string]string{},
 	}
 
 	for label, tmpl := range labelTemplates {
@@ -51,38 +45,24 @@ func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Co
 	return controller, nil
 }
 
-func (c *Controller) Register(name string, engine autodiscovery.Engine) {
-	c.engines[name] = engine
+func (c *Controller) Register(name string, strategy autodiscovery.DiscoveryStrategy) {
+	c.engines = append(c.engines, autodiscovery.NewEngine(name, strategy))
 }
 
 func (c *Controller) Start(minimumReconciliationInterval int) error {
 	println("NODE_NAME:", c.nodeName)
 	fmt.Printf("Minimum reconciliation interval: %ds\n", minimumReconciliationInterval)
 
-	dataChannel := make(chan EnginePayload)
+	dataChannel := make(chan autodiscovery.EnginePayload)
+	reconciliationHandler := NewSometimesWithDebounceChannel(time.Duration(minimumReconciliationInterval) * time.Second)
 
-	for name, engine := range c.engines {
-		callback := func(data map[string]string, err error) {
-			if err != nil {
-				fmt.Printf("%s engine encountered an error: %s\n", name, err.Error())
-				return
-			}
-			dataChannel <- EnginePayload{
-				EngineName: name,
-				Data:       data,
-			}
-		}
-
-		if err := engine.Setup(); err != nil {
+	for _, engine := range c.engines {
+		if err := engine.Start(dataChannel); err != nil {
 			return err
 		}
-
-		go engine.Watch(callback)
 	}
 
-	c.reconciliationHandler = NewSometimesWithDebounceChannel(time.Duration(minimumReconciliationInterval) * time.Second)
-
-	if err := c.watchNode(); err != nil {
+	if err := c.watchNode(reconciliationHandler); err != nil {
 		return err
 	}
 
@@ -90,22 +70,16 @@ func (c *Controller) Start(minimumReconciliationInterval int) error {
 		select {
 		case payload := <-dataChannel:
 			c.discoveryData[payload.EngineName] = payload.Data
-			c.reconciliationHandler.Trigger()
-		case <-c.reconciliationHandler.Chan():
-			node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), c.nodeName, metav1.GetOptions{})
-			if err != nil {
-				fmt.Printf("could not get node %s: %s", c.nodeName, err.Error())
-				continue
-			}
-
-			if err := c.reconcileNode(node); err != nil {
+			reconciliationHandler.Trigger()
+		case <-reconciliationHandler.Chan():
+			if err := c.reconcileNode(); err != nil {
 				fmt.Println(err.Error())
 			}
 		}
 	}
 }
 
-func (c *Controller) watchNode() error {
+func (c *Controller) watchNode(reconciliationHandler *SometimesWithDebounceChannel) error {
 	watchInterface, err := c.clientset.CoreV1().Nodes().Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -123,15 +97,20 @@ func (c *Controller) watchNode() error {
 			}
 
 			fmt.Println("received a node update, triggering reconciliation")
-			c.reconciliationHandler.Trigger()
+			reconciliationHandler.Trigger()
 		}
 	}()
 
 	return nil
 }
 
-func (c *Controller) reconcileNode(node *corev1.Node) error {
-	fmt.Println(time.Now())
+func (c *Controller) reconcileNode() error {
+	node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), c.nodeName, metav1.GetOptions{})
+	if err != nil {
+		fmt.Printf("could not get node %s: %s", c.nodeName, err.Error())
+		return nil
+	}
+
 	labels := map[string]string{}
 	for label, tmpl := range c.labelTemplates {
 		value := &bytes.Buffer{}
