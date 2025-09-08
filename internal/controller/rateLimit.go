@@ -15,12 +15,24 @@ type SometimesWithDebounce struct {
 	lastExec time.Time
 }
 
+type SometimesWithDebounceChannel struct {
+	swd     SometimesWithDebounce
+	channel chan struct{}
+}
+
 func NewSometimesWithDebounce(interval time.Duration) *SometimesWithDebounce {
 	return &SometimesWithDebounce{
 		s: rate.Sometimes{
 			First:    0,
 			Interval: interval,
 		},
+	}
+}
+
+func NewSometimesWithDebounceChannel(interval time.Duration) *SometimesWithDebounceChannel {
+	return &SometimesWithDebounceChannel{
+		swd:     *NewSometimesWithDebounce(interval),
+		channel: make(chan struct{}),
 	}
 }
 
@@ -51,4 +63,14 @@ func (swd *SometimesWithDebounce) Do(callback func()) {
 			swd.timer = nil
 		})
 	}
+}
+
+func (swdc *SometimesWithDebounceChannel) Trigger() {
+	go swdc.swd.Do(func() {
+		swdc.channel <- struct{}{}
+	})
+}
+
+func (swdc *SometimesWithDebounceChannel) Chan() <-chan struct{} {
+	return swdc.channel
 }

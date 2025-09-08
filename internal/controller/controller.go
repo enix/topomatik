@@ -19,12 +19,12 @@ import (
 )
 
 type Controller struct {
-	nodeName       string
-	clientset      *kubernetes.Clientset
-	labelTemplates map[string]*template.Template
-	engines        map[string]autodiscovery.Engine
-	discoveryData  map[string]map[string]string
-	swd            *SometimesWithDebounce
+	nodeName              string
+	clientset             *kubernetes.Clientset
+	labelTemplates        map[string]*template.Template
+	engines               map[string]autodiscovery.Engine
+	discoveryData         map[string]map[string]string
+	reconciliationHandler *SometimesWithDebounceChannel
 }
 
 type EnginePayload struct {
@@ -80,23 +80,29 @@ func (c *Controller) Start(minimumReconciliationInterval int) error {
 		go engine.Watch(callback)
 	}
 
-	c.watchNode()
+	c.reconciliationHandler = NewSometimesWithDebounceChannel(time.Duration(minimumReconciliationInterval) * time.Second)
 
-	c.swd = NewSometimesWithDebounce(time.Duration(minimumReconciliationInterval) * time.Second)
-
-	for payload := range dataChannel {
-		c.discoveryData[payload.EngineName] = payload.Data
-
-		node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), c.nodeName, metav1.GetOptions{})
-		if err != nil {
-			fmt.Printf("could not get node %s: %s", c.nodeName, err.Error())
-			continue
-		}
-
-		c.safeReconcileNode(node)
+	if err := c.watchNode(); err != nil {
+		return err
 	}
 
-	return nil
+	for {
+		select {
+		case payload := <-dataChannel:
+			c.discoveryData[payload.EngineName] = payload.Data
+			c.reconciliationHandler.Trigger()
+		case <-c.reconciliationHandler.Chan():
+			node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), c.nodeName, metav1.GetOptions{})
+			if err != nil {
+				fmt.Printf("could not get node %s: %s", c.nodeName, err.Error())
+				continue
+			}
+
+			if err := c.reconcileNode(node); err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+	}
 }
 
 func (c *Controller) watchNode() error {
@@ -117,19 +123,11 @@ func (c *Controller) watchNode() error {
 			}
 
 			fmt.Println("received a node update, triggering reconciliation")
-			c.safeReconcileNode(node)
+			c.reconciliationHandler.Trigger()
 		}
 	}()
 
 	return nil
-}
-
-func (c *Controller) safeReconcileNode(node *corev1.Node) {
-	c.swd.Do(func() {
-		if err := c.reconcileNode(node); err != nil {
-			fmt.Println(err.Error())
-		}
-	})
 }
 
 func (c *Controller) reconcileNode(node *corev1.Node) error {
@@ -152,8 +150,8 @@ func (c *Controller) reconcileNode(node *corev1.Node) error {
 		return nil
 	}
 
-	patch := map[string]interface{}{
-		"metadata": map[string]interface{}{
+	patch := map[string]any{
+		"metadata": map[string]any{
 			"labels": labels,
 		},
 	}
