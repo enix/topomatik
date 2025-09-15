@@ -84,13 +84,22 @@ spec:
 Topomatik is configured using a YAML file. Here's an example configuration:
 
 ```
+minimumReconciliationInterval: 1s
+
 labelTemplates:
-  topology.kubernetes.io/zone: "{{ .lldp.hostname }}"
-  topology.kubernetes.io/region: "{{ .lldp.description | regexp.Find "location: [^ ]" }}
+  topology.kubernetes.io/zone: "{{ .files.zone }}-{{ .lldp.hostname }}"
+  topology.kubernetes.io/region: "{{ .files.region }}-{{ .lldp.description | regexp.Find "location: [^ ]" }}
 
 lldp:
   enabled: true
   interface: auto
+
+files:
+  zone:
+    path: /etc/zone
+  region:
+    path: /etc/region
+    interval: 5s
 ```
 
 ### Label Templates
@@ -113,7 +122,7 @@ LLDP (Link Layer Discovery Protocol) is a vendor-neutral Layer 2 protocol that e
 
 It can be used in both bare-metal and virtualized environments to inform nodes about the underlying topology (eg: Proxmox PVE). In bare-metal environments, it must be enabled at the network device level (e.g., switches). In virtualized environments, you'll need to install the lldpd service on your hypervisors.
 
-##### Configuration
+##### LLDP configuration
 
 | Name      | Description                                                                                       | Default value |
 | --------- | ------------------------------------------------------------------------------------------------- | ------------- |
@@ -130,6 +139,17 @@ It can be used in both bare-metal and virtualized environments to inform nodes a
 ##### Proxmox PVE setup example
 
 Topomatik can be used with Proxmox PVE using the lldpd. Just install it using `apt install lldpd`. The default configuration should be sufficient to advertise the TLV handled by Topomatik.
+
+#### Files
+
+Reads the contents of a file.
+
+##### Files configuration
+
+| Name      | Description                                     | Default value |
+| --------- | ----------------------------------------------- | ------------- |
+| path      | Path of the file to watch                       | `<required>`  |
+| interval  | Use polling instead of watching (using inotify) | -             |
 
 ## 🤝 Contributing
 

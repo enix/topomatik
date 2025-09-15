@@ -5,6 +5,7 @@ import (
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
+	"github.com/go-playground/validator"
 	"gopkg.in/yaml.v2"
 )
 
@@ -13,7 +14,7 @@ type Config struct {
 	MinimumReconciliationInterval int               `yaml:"minimumReconciliationInterval"`
 
 	LLDP  EngineConfig[lldp.Config] `yaml:"lldp"`
-	Files files.Config              `yaml:"files"`
+	Files files.Config              `yaml:"files" validate:"dive"`
 }
 
 type EngineConfig[T any] struct {
@@ -29,6 +30,11 @@ func Load(path string) (*Config, error) {
 
 	var config Config
 	if err = yaml.Unmarshal(yamlFile, &config); err != nil {
+		return nil, err
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(config); err != nil {
 		return nil, err
 	}
 
