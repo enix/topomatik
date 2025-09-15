@@ -8,6 +8,7 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"github.com/enix/topomatik/internal/config"
 	"github.com/enix/topomatik/internal/controller"
+	"github.com/enix/topomatik/internal/schedulers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -48,7 +49,9 @@ func main() {
 		panic(err)
 	}
 
-	ctrl, err := controller.New(k8sClientset, config.LabelTemplates)
+	scheduler := schedulers.NewSometimesWithDebounceChannel(config.MinimumReconciliationInterval)
+
+	ctrl, err := controller.New(k8sClientset, scheduler, config.LabelTemplates)
 	if err != nil {
 		panic(err)
 	}
@@ -61,5 +64,5 @@ func main() {
 		ctrl.Register("files", &files.FilesDiscoveryEngine{Config: config.Files})
 	}
 
-	panic(ctrl.Start(config.MinimumReconciliationInterval))
+	panic(ctrl.Start())
 }

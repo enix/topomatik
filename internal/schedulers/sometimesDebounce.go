@@ -1,4 +1,4 @@
-package controller
+package schedulers
 
 import (
 	"sync"
@@ -47,12 +47,12 @@ func (swd *SometimesWithDebounce) Do(callback func()) {
 		swd.lastExec = time.Now()
 	})
 
-	if limited == true {
+	if limited {
 		if swd.timer != nil {
 			swd.timer.Stop()
 		}
 
-		nextExecInterval := swd.s.Interval - time.Now().Sub(swd.lastExec)
+		nextExecInterval := swd.s.Interval - time.Since(swd.lastExec)
 		swd.timer = time.AfterFunc(nextExecInterval, func() {
 			swd.mu.Lock()
 			defer swd.mu.Unlock()
@@ -71,6 +71,6 @@ func (swdc *SometimesWithDebounceChannel) Trigger() {
 	})
 }
 
-func (swdc *SometimesWithDebounceChannel) Chan() <-chan struct{} {
+func (swdc *SometimesWithDebounceChannel) C() <-chan struct{} {
 	return swdc.channel
 }

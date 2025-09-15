@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"text/template"
-	"time"
 
 	"github.com/Masterminds/sprig"
 	"github.com/enix/topomatik/internal/autodiscovery"
@@ -18,21 +17,28 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+type ReconciliationScheduler interface {
+	Trigger()
+	C() <-chan struct{}
+}
+
 type Controller struct {
 	nodeName       string
 	clientset      *kubernetes.Clientset
 	labelTemplates map[string]*template.Template
 	engines        []*autodiscovery.Engine
 	discoveryData  map[string]map[string]string
+	scheduler      ReconciliationScheduler
 }
 
-func New(clientset *kubernetes.Clientset, labelTemplates map[string]string) (*Controller, error) {
+func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, labelTemplates map[string]string) (*Controller, error) {
 	controller := &Controller{
 		nodeName:       os.Getenv("NODE_NAME"),
 		clientset:      clientset,
 		labelTemplates: map[string]*template.Template{},
 		engines:        []*autodiscovery.Engine{},
 		discoveryData:  map[string]map[string]string{},
+		scheduler:      scheduler,
 	}
 
 	for label, tmpl := range labelTemplates {
@@ -49,20 +55,17 @@ func (c *Controller) Register(name string, strategy autodiscovery.DiscoveryStrat
 	c.engines = append(c.engines, autodiscovery.NewEngine(name, strategy))
 }
 
-func (c *Controller) Start(minimumReconciliationInterval int) error {
+func (c *Controller) Start() error {
 	println("NODE_NAME:", c.nodeName)
-	fmt.Printf("Minimum reconciliation interval: %ds\n", minimumReconciliationInterval)
 
 	dataChannel := make(chan autodiscovery.EnginePayload)
-	reconciliationHandler := NewSometimesWithDebounceChannel(time.Duration(minimumReconciliationInterval) * time.Second)
-
 	for _, engine := range c.engines {
 		if err := engine.Start(dataChannel); err != nil {
 			return err
 		}
 	}
 
-	if err := c.watchNode(reconciliationHandler); err != nil {
+	if err := c.watchNode(); err != nil {
 		return err
 	}
 
@@ -70,8 +73,8 @@ func (c *Controller) Start(minimumReconciliationInterval int) error {
 		select {
 		case payload := <-dataChannel:
 			c.discoveryData[payload.EngineName] = payload.Data
-			reconciliationHandler.Trigger()
-		case <-reconciliationHandler.Chan():
+			c.scheduler.Trigger()
+		case <-c.scheduler.C():
 			if err := c.reconcileNode(); err != nil {
 				fmt.Println(err.Error())
 			}
@@ -79,7 +82,7 @@ func (c *Controller) Start(minimumReconciliationInterval int) error {
 	}
 }
 
-func (c *Controller) watchNode(reconciliationHandler *SometimesWithDebounceChannel) error {
+func (c *Controller) watchNode() error {
 	watchInterface, err := c.clientset.CoreV1().Nodes().Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -97,7 +100,7 @@ func (c *Controller) watchNode(reconciliationHandler *SometimesWithDebounceChann
 			}
 
 			fmt.Println("received a node update, triggering reconciliation")
-			reconciliationHandler.Trigger()
+			c.scheduler.Trigger()
 		}
 	}()
 

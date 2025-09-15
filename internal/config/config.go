@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
@@ -11,7 +12,7 @@ import (
 
 type Config struct {
 	LabelTemplates                map[string]string `yaml:"labelTemplates"`
-	MinimumReconciliationInterval int               `yaml:"minimumReconciliationInterval"`
+	MinimumReconciliationInterval time.Duration     `yaml:"minimumReconciliationInterval"`
 
 	LLDP  EngineConfig[lldp.Config] `yaml:"lldp"`
 	Files files.Config              `yaml:"files" validate:"dive"`
