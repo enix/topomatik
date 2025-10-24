@@ -70,8 +70,8 @@ spec:
 ```
 ## Roadmap
 
-- [ ] Refactor discovery engine reconciliation loop #1
-- [ ] DMI/BIOS discovery engine #2
+- [x] Refactor discovery engine reconciliation loop #1
+- [x] DMI/BIOS discovery engine #2
 - [ ] Local file / HTTP discovery engine #3
 - [ ] Hostname / node name discovery engine #4
 - [ ] Network config discovery engine #5
@@ -129,7 +129,7 @@ It can be used in both bare-metal and virtualized environments to inform nodes a
 | enabled   | Enable or disable this auto discovery engine                                                      | true          |
 | interface | Interface name to use for listen to LLDP frames or auto to use any interface with default gateway | auto          |
 
-##### Available template variables
+##### Available template variables from the LLDP engine
 
 | Name             | Description        |
 | ---------------- | ------------------ |
@@ -150,6 +150,24 @@ Reads the contents of a file.
 | --------- | ----------------------------------------------- | ------------- |
 | path      | Path of the file to watch                       | `<required>`  |
 | interval  | Use polling instead of watching (using inotify) | -             |
+
+#### Hardware
+
+This engine allows to read information about the hardware (equivalent to `dmidecode` on Linux, but it also supports MacOS and Windows).
+
+##### Hardware configuration
+
+| Name      | Description                                  | Default value |
+| --------- | -------------------------------------------- | ------------- |
+| enabled   | Enable or disable this auto discovery engine | false          |
+| interval  | Polling interval of the hardware information | `<required>`  |
+
+##### Available template variables from the hardware engine
+
+| Name                       | Description               |
+| -------------------------- | ------------------------- |
+| hardware.chassis_serial    | The chassis serial number |
+| hardware.chassis_asset_tag | The chassis asset tag     |
 
 ## 🤝 Contributing
 
