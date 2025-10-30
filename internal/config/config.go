@@ -1,7 +1,10 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
@@ -37,7 +40,31 @@ func Load(path string) (*Config, error) {
 	}
 
 	validate := validator.New()
+	validate.RegisterValidation("abs_path_or_url", func(fl validator.FieldLevel) bool {
+		v := fl.Field().String()
+
+		info, err := os.Stat(v)
+		if err == nil && !info.IsDir() {
+			return true
+		}
+
+		_, err = url.ParseRequestURI(v)
+		if err != nil {
+			return false
+		}
+
+		return strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://")
+	})
+
 	if err := validate.Struct(config); err != nil {
+		if errs, ok := err.(validator.ValidationErrors); ok {
+			for _, e := range errs {
+				switch e.Tag() {
+				case "abs_path_or_url":
+					err = fmt.Errorf("%w: \"%s\" must be a path to an existing file or a valid url starting with http(s)://", err, e.Value())
+				}
+			}
+		}
 		return nil, err
 	}
 
