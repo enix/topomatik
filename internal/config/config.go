@@ -9,6 +9,7 @@ import (
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
+	"github.com/enix/topomatik/internal/autodiscovery/hostname"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"github.com/go-playground/validator"
 	"gopkg.in/yaml.v2"
@@ -21,6 +22,7 @@ type Config struct {
 	LLDP     EngineConfig[lldp.Config]     `yaml:"lldp"`
 	Files    files.Config                  `yaml:"files" validate:"dive"`
 	Hardware EngineConfig[hardware.Engine] `yaml:"hardware"`
+	Hostname EngineConfig[hostname.Engine] `yaml:"hostname"`
 }
 
 type EngineConfig[T any] struct {
