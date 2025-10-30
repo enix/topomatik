@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
+	"github.com/enix/topomatik/internal/autodiscovery/hostname"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"github.com/enix/topomatik/internal/config"
 	"github.com/enix/topomatik/internal/controller"
@@ -57,23 +58,19 @@ func main() {
 	}
 
 	if config.LLDP.Enabled {
-		// TODO: update this engine to remove Config struct in favor of merged config and engine
 		ctrl.Register("lldp", &lldp.LLDPDiscoveryEngine{Config: config.LLDP.Config})
 	}
 
 	if len(config.Files) > 0 {
-		// TODO: update this engine to remove Config struct in favor of merged config and engine
 		ctrl.Register("files", &files.FilesDiscoveryEngine{Config: config.Files})
 	}
 
-	// TODO: ctrl.RegisterMany(map[string]discoveryengine{"hardware": config.Hardware.Config})
-	// ou mieux: config.Engines and iterate over keys in struct to get the name
 	if config.Hardware.Enabled {
 		ctrl.Register("hardware", &config.Hardware.Config)
 	}
 
 	if config.Hostname.Enabled {
-		ctrl.Register("hostname", &config.Hostname.Config)
+		ctrl.Register("hostname", hostname.New(&config.Hostname.Config))
 	}
 
 	panic(ctrl.Start())

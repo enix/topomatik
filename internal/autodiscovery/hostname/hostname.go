@@ -8,10 +8,24 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/generic/interval"
 )
 
-type Engine struct {
-	interval.Engine `yaml:",inline"`
+type Config struct {
+	interval.Config `yaml:",inline"`
 	Pattern         *regexp.Regexp `yaml:"pattern"`
 	GroupNames      []string       `yaml:"groupNames"` // TODO: ensure that there are no more group names than groups in pattern
+}
+
+type Engine struct {
+	interval.Engine
+	Config
+}
+
+func New(config *Config) *Engine {
+	return &Engine{
+		Config: *config,
+		Engine: interval.Engine{
+			Config: config.Config,
+		},
+	}
 }
 
 func (e *Engine) Watch(callback func(map[string]string, error)) {

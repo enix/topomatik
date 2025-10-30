@@ -4,12 +4,12 @@ import (
 	"time"
 )
 
-type Handler interface {
-	Update(callback func(data map[string]string, err error))
+type Config struct {
+	Interval time.Duration `yaml:"interval"`
 }
 
 type Engine struct {
-	Interval time.Duration `yaml:"interval"`
+	Config
 }
 
 func (g *Engine) Setup() error {

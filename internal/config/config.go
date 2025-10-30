@@ -22,7 +22,7 @@ type Config struct {
 	LLDP     EngineConfig[lldp.Config]     `yaml:"lldp"`
 	Files    files.Config                  `yaml:"files" validate:"dive"`
 	Hardware EngineConfig[hardware.Engine] `yaml:"hardware"`
-	Hostname EngineConfig[hostname.Engine] `yaml:"hostname"`
+	Hostname EngineConfig[hostname.Config] `yaml:"hostname"`
 }
 
 type EngineConfig[T any] struct {
