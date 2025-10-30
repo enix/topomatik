@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
+	"github.com/enix/topomatik/internal/autodiscovery/generic/interval"
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"github.com/go-playground/validator"
@@ -18,9 +19,9 @@ type Config struct {
 	LabelTemplates                map[string]string `yaml:"labelTemplates"`
 	MinimumReconciliationInterval time.Duration     `yaml:"minimumReconciliationInterval"`
 
-	LLDP     EngineConfig[lldp.Config]     `yaml:"lldp"`
-	Files    files.Config                  `yaml:"files" validate:"dive"`
-	Hardware EngineConfig[hardware.Config] `yaml:"hardware"`
+	LLDP     EngineConfig[lldp.Config]                      `yaml:"lldp"`
+	Files    files.Config                                   `yaml:"files" validate:"dive"`
+	Hardware EngineConfig[interval.Config[hardware.Config]] `yaml:"hardware"`
 }
 
 type EngineConfig[T any] struct {

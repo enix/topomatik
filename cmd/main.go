@@ -66,7 +66,7 @@ func main() {
 	}
 
 	if config.Hardware.Enabled {
-		ctrl.Register("hardware", &hardware.HardwareDiscoveryEngine{Config: config.Hardware.Config})
+		ctrl.Register("hardware", hardware.New(&config.Hardware.Config))
 	}
 
 	panic(ctrl.Start())
