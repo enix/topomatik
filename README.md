@@ -72,7 +72,7 @@ spec:
 
 - [x] Refactor discovery engine reconciliation loop #1
 - [x] DMI/BIOS discovery engine #2
-- [ ] Local file / HTTP discovery engine #3
+- [x] Local file / HTTP discovery engine #3
 - [ ] Hostname / node name discovery engine #4
 - [ ] Network config discovery engine #5
 - [ ] Taint management #6
@@ -142,14 +142,35 @@ Topomatik can be used with Proxmox PVE using the lldpd. Just install it using `a
 
 #### Files
 
-Reads the contents of a file.
+Reads the contents of a file. It supports reading files over http(s). It supports either watching or polling files. However, watch is supported for local files only using inotify.
 
 ##### Files configuration
 
-| Name      | Description                                     | Default value |
-| --------- | ----------------------------------------------- | ------------- |
-| path      | Path of the file to watch                       | `<required>`  |
-| interval  | Use polling instead of watching (using inotify) | -             |
+| Name      | Description                                     | Default value                 |
+| --------- | ----------------------------------------------- | ----------------------------- |
+| path      | Path or url of the file to watch                | `<required>`                  |
+| interval  | Use polling instead of watching (using inotify) | `<required_for_remote_files>` |
+
+Example:
+
+```yaml
+files:
+  # watching a local file
+  zone:
+    path: /etc/zone
+  # polling a local file
+  region:
+    path: /etc/region
+    interval: 5s
+  # polling a remote file
+  rack:
+    path: http://localhost:8080/rackname
+    interval: 1m # this is required for remote files
+```
+
+##### Available template variables from the files engine
+
+Template variables are defined by the name of each file entry in the configuration. For instance, with the above configuration, this engine exposes `.files.zone`, `.files.region` and `.files.rack`.
 
 #### Hardware
 
