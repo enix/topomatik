@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
-	"github.com/enix/topomatik/internal/autodiscovery/hardware"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
 	"github.com/enix/topomatik/internal/config"
 	"github.com/enix/topomatik/internal/controller"
@@ -66,7 +65,7 @@ func main() {
 	}
 
 	if config.Hardware.Enabled {
-		ctrl.Register("hardware", &hardware.HardwareDiscoveryEngine{Config: config.Hardware.Config})
+		ctrl.Register("hardware", &config.Hardware.Config)
 	}
 
 	panic(ctrl.Start())

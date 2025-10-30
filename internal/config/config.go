@@ -20,7 +20,7 @@ type Config struct {
 
 	LLDP     EngineConfig[lldp.Config]     `yaml:"lldp"`
 	Files    files.Config                  `yaml:"files" validate:"dive"`
-	Hardware EngineConfig[hardware.Config] `yaml:"hardware"`
+	Hardware EngineConfig[hardware.Engine] `yaml:"hardware"`
 }
 
 type EngineConfig[T any] struct {
