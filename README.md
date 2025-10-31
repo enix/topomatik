@@ -73,7 +73,7 @@ spec:
 - [x] Refactor discovery engine reconciliation loop #1
 - [x] DMI/BIOS discovery engine #2
 - [x] Local file / HTTP discovery engine #3
-- [ ] Hostname / node name discovery engine #4
+- [x] Hostname / node name discovery engine #4
 - [ ] Network config discovery engine #5
 - [ ] Taint management #6
 - [ ] Prometheus Exporter #7
@@ -189,6 +189,30 @@ This engine allows to read information about the hardware (equivalent to `dmidec
 | -------------------------- | ------------------------- |
 | hardware.chassis_serial    | The chassis serial number |
 | hardware.chassis_asset_tag | The chassis asset tag     |
+
+#### Hostname
+
+This engine allows to read the name of the host and parse it using regexps.
+
+Example parsing the hostname `EU-R1-42`
+
+```yaml
+hostname:
+  enabled: true
+  pattern: "(?P<zone>[A-Z]{2})-(?P<region>R[0-9])-(?P<node>[0-9]+)$"
+```
+
+##### Hostname configuration
+
+| Name      | Description                                  | Default value |
+| --------- | -------------------------------------------- | ------------- |
+| enabled   | Enable or disable this auto discovery engine | false          |
+| interval  | Polling interval of the hostname information | `<required>`  |
+| pattern   | Regexp with named groups                     | -             |
+
+##### Available template variables from the hostname engine
+
+Template variables are defined by the name of an file entry in the configuration. For instance, with the above configuration, this engine exposes `.hostname.zone`, `.hostname.region` and `.hostname.node`, but since the `pattern` in the configuration is optional, it also exposes the whole hostname as `.hostname.value`.
 
 ## 🤝 Contributing
 
