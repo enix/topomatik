@@ -2,34 +2,34 @@
 
 <p align="center">
     <a href="https://opensource.org/licenses/MIT" alt="MIT License">
-        <img src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
+        <img alt="License MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
     <a href="https://enix.io/fr/blog/" alt="Brought to you by ENIX">
-        <img src="https://img.shields.io/badge/Brought%20to%20you%20by-ENIX-%23377dff?labelColor=888&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAQAAAC1QeVaAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQfkBAkQIg/iouK/AAABZ0lEQVQY0yXBPU8TYQDA8f/zcu1RSDltKliD0BKNECYZmpjgIAOLiYtubn4EJxI/AImzg3E1+AGcYDIMJA7lxQQQQRAiSSFG2l457+655x4Gfz8B45zwipWJ8rPCQ0g3+p9Pj+AlHxHjnLHAbvPW2+GmLoBN+9/+vNlfGeU2Auokd8Y+VeYk/zk6O2fP9fcO8hGpN/TUbxpiUhJiEorTgy+6hUlU5N1flK+9oIJHiKNCkb5wMyOFw3V9o+zN69o0Exg6ePh4/GKr6s0H72Tc67YsdXbZ5gENNjmigaXbMj0tzEWrZNtqigva5NxjhFP6Wfw1N1pjqpFaZQ7FAY6An6zxTzHs0BGqY/NQSnxSBD6WkDRTf3O0wG2Ztl/7jaQEnGNxZMdy2yET/B2xfGlDagQE1OgRRvL93UOHqhLnesPKqJ4NxLLn2unJgVka/HBpbiIARlHFq1n/cWlMZMne1ZfyD5M/Aa4BiyGSwP4Jl3UAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDQtMDlUMTQ6MzQ6MTUrMDI6MDDBq8/nAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA0LTA5VDE0OjM0OjE1KzAyOjAwsPZ3WwAAAABJRU5ErkJggg==" /></a>
+        <img alt="Brought to you by ENIX" src="https://img.shields.io/badge/Brought%20to%20you%20by-ENIX-%23377dff?labelColor=888&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAQAAAC1QeVaAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAHdElNRQfkBAkQIg/iouK/AAABZ0lEQVQY0yXBPU8TYQDA8f/zcu1RSDltKliD0BKNECYZmpjgIAOLiYtubn4EJxI/AImzg3E1+AGcYDIMJA7lxQQQQRAiSSFG2l457+655x4Gfz8B45zwipWJ8rPCQ0g3+p9Pj+AlHxHjnLHAbvPW2+GmLoBN+9/+vNlfGeU2Auokd8Y+VeYk/zk6O2fP9fcO8hGpN/TUbxpiUhJiEorTgy+6hUlU5N1flK+9oIJHiKNCkb5wMyOFw3V9o+zN69o0Exg6ePh4/GKr6s0H72Tc67YsdXbZ5gENNjmigaXbMj0tzEWrZNtqigva5NxjhFP6Wfw1N1pjqpFaZQ7FAY6An6zxTzHs0BGqY/NQSnxSBD6WkDRTf3O0wG2Ztl/7jaQEnGNxZMdy2yET/B2xfGlDagQE1OgRRvL93UOHqhLnesPKqJ4NxLLn2unJgVka/HBpbiIARlHFq1n/cWlMZMne1ZfyD5M/Aa4BiyGSwP4Jl3UAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjAtMDQtMDlUMTQ6MzQ6MTUrMDI6MDDBq8/nAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIwLTA0LTA5VDE0OjM0OjE1KzAyOjAwsPZ3WwAAAABJRU5ErkJggg==" /></a>
 </p>
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/enix/topomatik/refs/heads/main/artworks/topomatik.png" />
+    <img alt="Topomatik logo" src="https://raw.githubusercontent.com/enix/topomatik/refs/heads/main/artworks/topomatik.png" />
 </p>
 
 Topomatik automatically reflects your underlying infrastructure in Kubernetes node topology labels, because manually updating topology is about as fun as untangling holiday lights 🎄
 
 Learn more about topology in Kubernetes:
 
-- https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone
-- https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+- [https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone]
+- [https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/]
 
 ## ✨ Features
 
 - Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node labels based on autodiscovered infrastructure
 - Multiple auto-discovery engines. Currently only LLDP is supported (more coming soon™)
-- Works with both virtualized and bare-metal nodes
+- Works with both virtualised and bare-metal nodes
 - Runs as a DaemonSet; updates topology even when nodes are live-migrated
 
 ## 📦 Installation
 
-## TL;DR:
+## TL;DR
 
-```
+```bash
 helm install my-release oci://quay.io/enix/charts/topomatik
 ```
 
@@ -37,7 +37,7 @@ helm install my-release oci://quay.io/enix/charts/topomatik
 
 When using [Flux](https://fluxcd.io), you can use this `HelmRepository` object as repository for all ENIX projects:
 
-```
+```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -51,7 +51,7 @@ spec:
 
 Then, you can create a `HelmRelease` object pointing to this repository:
 
-```
+```yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -68,6 +68,7 @@ spec:
         namespace: default
       version: 1.*
 ```
+
 ## Roadmap
 
 - [x] Refactor discovery engine reconciliation loop #1
@@ -83,7 +84,7 @@ spec:
 
 Topomatik is configured using a YAML file. Here's an example configuration:
 
-```
+```yaml
 minimumReconciliationInterval: 1s
 
 labelTemplates:
@@ -120,7 +121,7 @@ Below you'll find detailed information about each supported engine
 
 LLDP (Link Layer Discovery Protocol) is a vendor-neutral Layer 2 protocol that enables network devices to automatically discover and share information about their identity, capabilities, and neighboring devices on a local network.
 
-It can be used in both bare-metal and virtualized environments to inform nodes about the underlying topology (eg: Proxmox PVE). In bare-metal environments, it must be enabled at the network device level (e.g., switches). In virtualized environments, you'll need to install the lldpd service on your hypervisors.
+It can be used in both bare-metal and virtualised environments to inform nodes about the underlying topology (eg: Proxmox PVE). In bare-metal environments, it must be enabled at the network device level (e.g., switches). In virtualised environments, you'll need to install the lldpd service on your hypervisors.
 
 ##### LLDP configuration
 
