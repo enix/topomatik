@@ -11,7 +11,7 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
 	"github.com/enix/topomatik/internal/autodiscovery/hostname"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
 )
 
