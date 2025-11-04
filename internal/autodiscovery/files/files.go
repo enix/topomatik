@@ -40,7 +40,9 @@ func (f *FilesDiscoveryEngine) Setup() (err error) {
 	f.buffer = make(map[string]string)
 	for name, file := range f.Config {
 		file.remote = !filepath.IsAbs(file.Path)
-		f.updateDataFromFile(name)
+		if err := f.updateDataFromFile(name); err != nil {
+			return err
+		}
 		if file.Interval != 0 {
 			continue
 		}
@@ -55,7 +57,12 @@ func (f *FilesDiscoveryEngine) Setup() (err error) {
 }
 
 func (f *FilesDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
-	defer f.watcher.Close()
+	defer func() {
+		if err := f.watcher.Close(); err != nil {
+			callback(nil, err)
+		}
+	}()
+
 	callback(maps.Clone(f.buffer), nil)
 
 	ticker := time.NewTicker(time.Second)

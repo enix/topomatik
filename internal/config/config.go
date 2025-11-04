@@ -42,7 +42,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	validate := validator.New()
-	validate.RegisterValidation("abs_path_or_url", func(fl validator.FieldLevel) bool {
+	err = validate.RegisterValidation("abs_path_or_url", func(fl validator.FieldLevel) bool {
 		v := fl.Field().String()
 
 		info, err := os.Stat(v)
@@ -57,6 +57,9 @@ func Load(path string) (*Config, error) {
 
 		return strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://")
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	validate.RegisterStructValidation(func(sl validator.StructLevel) {
 		file := sl.Current().Interface().(files.File)
