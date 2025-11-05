@@ -75,7 +75,7 @@ spec:
 - [x] DMI/BIOS discovery engine #2
 - [x] Local file / HTTP discovery engine #3
 - [x] Hostname / node name discovery engine #4
-- [ ] Network config discovery engine #5
+- [x] Network config discovery engine #5
 - [ ] Taint management #6
 - [ ] Prometheus Exporter #7
 - [ ] Better RBAC / admission webhook #8
@@ -108,6 +108,11 @@ files:
 The `labelsTemplates` section defines which Kubernetes labels Topomatik will manage. Each value is a Go template that will be rendered to determine the label value.
 
 The [Sprig library](http://masterminds.github.io/sprig/) is available for advanced template operations, giving you access to string manipulation, regular expressions, and more.
+
+> [!NOTE]
+> Labels must be an empty string or consist of alphanumeric characters, "-", "\_" or ".", and must start and end with an alphanumeric character. Invalid characters will be replaced by "\_" and trailing non alpha-numeric characters will be removed.
+>
+> Example: "@@@foo+bar.foobar----." will be rendered as "foo_bar.foobar".
 
 ### Auto-Discovery Engine Configuration
 
@@ -214,6 +219,24 @@ hostname:
 ##### Available template variables from the hostname engine
 
 Template variables are defined by the name of an file entry in the configuration. For instance, with the above configuration, this engine exposes `.hostname.zone`, `.hostname.region` and `.hostname.node`, but since the `pattern` in the configuration is optional, it also exposes the whole hostname as `.hostname.value`.
+
+#### Network
+
+Reads network information of the device in order to group machines by subnet.
+
+##### Network configuration
+
+| Name      | Description                                                                             | Default value |
+| --------- | --------------------------------------------------------------------------------------- | ------------- |
+| enabled   | Enable or disable this auto discovery engine                                            | false         |
+| interval  | Polling interval of the hardware information                                            | `<required>`  |
+| interface | Interface name to get the subnet from or auto to use any interface with default gateway | auto          |
+
+##### Available template variables from the network engine
+
+| Name           | Description                                      |
+| ---------------| ------------------------------------------------ |
+| network.subnet | The subnet associated with the defined interface |
 
 ## 🤝 Contributing
 
