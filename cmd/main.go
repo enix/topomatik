@@ -8,6 +8,7 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
 	"github.com/enix/topomatik/internal/autodiscovery/hostname"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
+	"github.com/enix/topomatik/internal/autodiscovery/network"
 	"github.com/enix/topomatik/internal/config"
 	"github.com/enix/topomatik/internal/controller"
 	"github.com/enix/topomatik/internal/schedulers"
@@ -74,5 +75,8 @@ func main() {
 		ctrl.Register("hostname", &hostname.HostnameDiscoveryEngine{Config: config.Hostname.Config})
 	}
 
+	if config.Network.Enabled {
+		ctrl.Register("network", &network.NetworkDiscoveryEngine{Config: config.Network.Config})
+	}
 	panic(ctrl.Start())
 }

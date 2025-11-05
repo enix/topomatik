@@ -1,9 +1,9 @@
 package lldp
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/enix/topomatik/internal/autodiscovery/network"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/afpacket"
 	"github.com/google/gopacket/layers"
@@ -85,21 +85,15 @@ func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string, err er
 }
 
 func getDefaultRouteInterfaceName() (string, error) {
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_ALL)
+	defaultRoute, err := network.GetDefaultRoute()
 	if err != nil {
 		return "", err
 	}
 
-	for _, route := range routes {
-		ones, _ := route.Dst.Mask.Size()
-		if route.Dst == nil || (route.Dst.IP.IsUnspecified() && ones == 0) {
-			link, err := netlink.LinkByIndex(route.LinkIndex)
-			if err != nil {
-				return "", err
-			}
-			return link.Attrs().Name, nil
-		}
+	link, err := netlink.LinkByIndex(defaultRoute.LinkIndex)
+	if err != nil {
+		return "", err
 	}
 
-	return "", errors.New("default route not found")
+	return link.Attrs().Name, nil
 }
