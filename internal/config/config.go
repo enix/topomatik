@@ -11,6 +11,7 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
 	"github.com/enix/topomatik/internal/autodiscovery/hostname"
 	"github.com/enix/topomatik/internal/autodiscovery/lldp"
+	"github.com/enix/topomatik/internal/autodiscovery/network"
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
 )
@@ -23,6 +24,7 @@ type Config struct {
 	Files    files.Config                  `yaml:"files" validate:"dive"`
 	Hardware EngineConfig[hardware.Config] `yaml:"hardware"`
 	Hostname EngineConfig[hostname.Config] `yaml:"hostname"`
+	Network  EngineConfig[network.Config]  `yaml:"network"`
 }
 
 type EngineConfig[T any] struct {
@@ -78,6 +80,9 @@ func Load(path string) (*Config, error) {
 	}
 	if !config.Hostname.Enabled {
 		ignoredEngines = append(ignoredEngines, "Hostname")
+	}
+	if !config.Network.Enabled {
+		ignoredEngines = append(ignoredEngines, "Network")
 	}
 
 	if err := validate.StructExcept(config, ignoredEngines...); err != nil {
