@@ -109,6 +109,11 @@ The `labelsTemplates` section defines which Kubernetes labels Topomatik will man
 
 The [Sprig library](http://masterminds.github.io/sprig/) is available for advanced template operations, giving you access to string manipulation, regular expressions, and more.
 
+> [!NOTE]
+> Labels must be an empty string or consist of alphanumeric characters, "-", "\_" or ".", and must start and end with an alphanumeric character. Invalid characters will be replaced by "\_" and trailing non alpha-numeric characters will be removed.
+>
+> Example: "@@@foo+bar.foobar----." will be rendered as "foo_bar.foobar".
+
 ### Auto-Discovery Engine Configuration
 
 Each auto-discovery engine has its own configuration section.

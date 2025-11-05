@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
@@ -16,6 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 )
+
+var labelRegexp = regexp.MustCompile(`[^A-Za-z0-9._-]`)
 
 type ReconciliationScheduler interface {
 	Trigger()
@@ -121,9 +125,13 @@ func (c *Controller) reconcileNode() error {
 		if err != nil {
 			fmt.Printf("could not render template for %s: %s\n", label, err.Error())
 		} else {
-			if node.Labels[label] != value.String() {
-				labels[label] = value.String()
-				fmt.Printf("%s: %s\n", label, value)
+			sanitizedValue := labelRegexp.ReplaceAllString(value.String(), "_")
+			sanitizedValue = strings.TrimFunc(sanitizedValue, func(r rune) bool {
+				return strings.Contains("_.-", string(r))
+			})
+			if node.Labels[label] != sanitizedValue {
+				labels[label] = sanitizedValue
+				fmt.Printf("%s: %s\n", label, sanitizedValue)
 			}
 		}
 	}
