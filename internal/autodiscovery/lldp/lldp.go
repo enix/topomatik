@@ -1,9 +1,10 @@
 package lldp
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/enix/topomatik/internal/autodiscovery/network"
+	"github.com/enix/topomatik/internal/logging"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/afpacket"
 	"github.com/google/gopacket/layers"
@@ -22,14 +23,16 @@ type LLDPDiscoveryEngine struct {
 	tPacket *afpacket.TPacket
 }
 
-func (l *LLDPDiscoveryEngine) Setup() (err error) {
+func (l *LLDPDiscoveryEngine) Setup(ctx context.Context) (err error) {
+	log := logging.FromContext(ctx)
+
 	if l.Interface == "" {
 		if l.Interface, err = getDefaultRouteInterfaceName(); err != nil {
 			return
 		}
 	}
 
-	fmt.Println("lldp: using interface:", l.Interface)
+	log.Info("using interface", "interface", l.Interface)
 
 	l.tPacket, err = afpacket.NewTPacket(
 		afpacket.OptInterface(l.Interface),
@@ -61,7 +64,7 @@ func (l *LLDPDiscoveryEngine) Setup() (err error) {
 	return
 }
 
-func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
+func (l *LLDPDiscoveryEngine) Watch(_ context.Context, callback func(data map[string]string, err error)) {
 	packetSource := gopacket.NewPacketSource(l.tPacket, layers.LayerTypeEthernet)
 	for packet := range packetSource.Packets() {
 		if lldpLayer := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldpLayer != nil {

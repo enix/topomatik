@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -60,7 +61,11 @@ func (c *Controller) Register(name string, strategy autodiscovery.DiscoveryStrat
 }
 
 func (c *Controller) Start() error {
-	println("NODE_NAME:", c.nodeName)
+	engineNames := make([]string, 0, len(c.engines))
+	for _, engine := range c.engines {
+		engineNames = append(engineNames, engine.Name())
+	}
+	slog.Info("starting controller", "node", c.nodeName, "engines", engineNames)
 
 	dataChannel := make(chan autodiscovery.EnginePayload)
 	for _, engine := range c.engines {
@@ -76,11 +81,12 @@ func (c *Controller) Start() error {
 	for {
 		select {
 		case payload := <-dataChannel:
+			slog.Debug("received payload from engine", "engine", payload.EngineName, "data", payload.Data)
 			c.discoveryData[payload.EngineName] = payload.Data
 			c.scheduler.Trigger()
 		case <-c.scheduler.C():
 			if err := c.reconcileNode(); err != nil {
-				fmt.Println(err.Error())
+				slog.Error("reconciliation failed", "error", err)
 			}
 		}
 	}
@@ -92,6 +98,7 @@ func (c *Controller) watchNode() error {
 		return err
 	}
 
+	slog.Info("watching node")
 	go func() {
 		for event := range watchInterface.ResultChan() {
 			if event.Type != watch.Modified {
@@ -103,18 +110,20 @@ func (c *Controller) watchNode() error {
 				continue
 			}
 
-			fmt.Println("received a node update, triggering reconciliation")
+			slog.Debug("received node update, triggering reconciliation")
 			c.scheduler.Trigger()
 		}
+		slog.Warn("node watch channel closed")
 	}()
 
 	return nil
 }
 
 func (c *Controller) reconcileNode() error {
+	slog.Debug("reconciling node")
 	node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), c.nodeName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("could not get node %s: %s", c.nodeName, err.Error())
+		slog.Error("could not get node", "node", c.nodeName, "error", err)
 		return nil
 	}
 
@@ -123,7 +132,7 @@ func (c *Controller) reconcileNode() error {
 		value := &bytes.Buffer{}
 		err := tmpl.Execute(value, c.discoveryData)
 		if err != nil {
-			fmt.Printf("could not render template for %s: %s\n", label, err.Error())
+			slog.Warn("could not render template", "label", label, "error", err)
 		} else {
 			sanitizedValue := labelRegexp.ReplaceAllString(value.String(), "_")
 			sanitizedValue = strings.TrimFunc(sanitizedValue, func(r rune) bool {
@@ -131,12 +140,13 @@ func (c *Controller) reconcileNode() error {
 			})
 			if node.Labels[label] != sanitizedValue {
 				labels[label] = sanitizedValue
-				fmt.Printf("%s: %s\n", label, sanitizedValue)
+				slog.Info("label changed", "label", label, "value", sanitizedValue)
 			}
 		}
 	}
 
 	if len(labels) == 0 {
+		slog.Debug("no label changes detected")
 		return nil
 	}
 
@@ -154,6 +164,8 @@ func (c *Controller) reconcileNode() error {
 	if err != nil {
 		return fmt.Errorf("could not patch node %s: %w", c.nodeName, err)
 	}
+
+	slog.Info("node labels patched", "count", len(labels))
 
 	return nil
 }

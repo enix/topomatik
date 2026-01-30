@@ -1,10 +1,15 @@
 package autodiscovery
 
-import "fmt"
+import (
+	"context"
+	"log/slog"
+
+	"github.com/enix/topomatik/internal/logging"
+)
 
 type DiscoveryStrategy interface {
-	Setup() error
-	Watch(func(data map[string]string, err error))
+	Setup(ctx context.Context) error
+	Watch(ctx context.Context, callback func(data map[string]string, err error))
 }
 
 type Engine struct {
@@ -24,14 +29,21 @@ func NewEngine(name string, strategy DiscoveryStrategy) *Engine {
 	}
 }
 
+func (e *Engine) Name() string {
+	return e.name
+}
+
 func (e *Engine) Start(dataChannel chan<- EnginePayload) error {
-	if err := e.strategy.Setup(); err != nil {
+	logger := slog.Default().With("engine", e.name)
+	ctx := logging.NewContext(context.Background(), logger)
+
+	if err := e.strategy.Setup(ctx); err != nil {
 		return err
 	}
 
-	go e.strategy.Watch(func(data map[string]string, err error) {
+	go e.strategy.Watch(ctx, func(data map[string]string, err error) {
 		if err != nil {
-			fmt.Printf("%s engine encountered an error: %s\n", e.name, err.Error())
+			logger.Error("engine encountered an error", "error", err)
 			return
 		}
 		dataChannel <- EnginePayload{

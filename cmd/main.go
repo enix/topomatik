@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log/slog"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
@@ -11,6 +11,7 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/network"
 	"github.com/enix/topomatik/internal/config"
 	"github.com/enix/topomatik/internal/controller"
+	"github.com/enix/topomatik/internal/logging"
 	"github.com/enix/topomatik/internal/schedulers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -23,11 +24,25 @@ func main() {
 	var (
 		configPath     string
 		kubeconfigPath string
+		logFormat      logging.Format
+		logLevel       logging.Level
 	)
+
+	if Version == "dev" {
+		logFormat = logging.FormatText
+		logLevel.Level = slog.LevelDebug
+	} else {
+		logFormat = logging.FormatJSON
+		logLevel.Level = slog.LevelInfo
+	}
 
 	flag.StringVar(&configPath, "config", "/etc/topomatik/config.yaml", "Path to the configuration file")
 	flag.StringVar(&kubeconfigPath, "kubeconfig", "", "Path to a kubeconfig file.")
+	flag.Var(&logFormat, "log-format", "Log output format: \"json\" or \"text\"")
+	flag.Var(&logLevel, "log-level", "Log level: \"debug\", \"info\", \"warn\", or \"error\"")
 	flag.Parse()
+
+	logging.Setup(logFormat, logLevel)
 
 	config, err := config.Load(configPath)
 	if err != nil {
@@ -37,10 +52,10 @@ func main() {
 	var kubeconfig *rest.Config
 
 	if kubeconfigPath == "" {
-		fmt.Println("using in-cluster configuration")
+		slog.Info("using in-cluster configuration")
 		kubeconfig, err = rest.InClusterConfig()
 	} else {
-		fmt.Println("using configuration from file: " + kubeconfigPath)
+		slog.Info("using kubeconfig", "path", kubeconfigPath)
 		kubeconfig, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	}
 	if err != nil {
