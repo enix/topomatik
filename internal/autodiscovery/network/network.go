@@ -1,9 +1,11 @@
 package network
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"github.com/enix/topomatik/internal/logging"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 )
@@ -16,11 +18,11 @@ type NetworkDiscoveryEngine struct {
 	Config
 }
 
-func (n *NetworkDiscoveryEngine) Setup() (err error) {
+func (n *NetworkDiscoveryEngine) Setup(_ context.Context) (err error) {
 	return
 }
 
-func (n *NetworkDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
+func (n *NetworkDiscoveryEngine) Watch(ctx context.Context, callback func(data map[string]string, err error)) {
 	routeUpdates := make(chan netlink.RouteUpdate, 16)
 	if err := netlink.RouteSubscribe(routeUpdates, nil); err != nil {
 		callback(nil, fmt.Errorf("failed to subscribe to route updates: %w", err))
@@ -33,7 +35,7 @@ func (n *NetworkDiscoveryEngine) Watch(callback func(data map[string]string, err
 		return
 	}
 
-	n.emit(callback)
+	n.emit(ctx, callback)
 
 	for {
 		select {
@@ -48,11 +50,13 @@ func (n *NetworkDiscoveryEngine) Watch(callback func(data map[string]string, err
 				return
 			}
 		}
-		n.emit(callback)
+		n.emit(ctx, callback)
 	}
 }
 
-func (n *NetworkDiscoveryEngine) emit(callback func(data map[string]string, err error)) {
+func (n *NetworkDiscoveryEngine) emit(ctx context.Context, callback func(data map[string]string, err error)) {
+	log := logging.FromContext(ctx)
+
 	link, err := n.getLink()
 	if err != nil {
 		callback(nil, err)
@@ -78,9 +82,12 @@ func (n *NetworkDiscoveryEngine) emit(callback func(data map[string]string, err 
 		}
 	}
 	ones, _ := ipnet.Mask.Size()
+	subnet := fmt.Sprintf("%s/%d", ipnet.IP.Mask(ipnet.Mask), ones)
+
+	log.Debug("resolved subnet", "interface", link.Attrs().Name, "subnet", subnet)
 
 	callback(map[string]string{
-		"subnet": fmt.Sprintf("%s/%d", ipnet.IP.Mask(ipnet.Mask), ones),
+		"subnet": subnet,
 	}, nil)
 }
 

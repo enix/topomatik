@@ -1,6 +1,7 @@
 package files
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"maps"
@@ -30,7 +31,7 @@ type FilesDiscoveryEngine struct {
 	buffer      map[string]string
 }
 
-func (f *FilesDiscoveryEngine) Setup() (err error) {
+func (f *FilesDiscoveryEngine) Setup(_ context.Context) (err error) {
 	f.watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (f *FilesDiscoveryEngine) Setup() (err error) {
 	return
 }
 
-func (f *FilesDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
+func (f *FilesDiscoveryEngine) Watch(_ context.Context, callback func(data map[string]string, err error)) {
 	defer func() {
 		if err := f.watcher.Close(); err != nil {
 			callback(nil, err)

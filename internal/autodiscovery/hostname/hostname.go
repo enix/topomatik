@@ -1,6 +1,7 @@
 package hostname
 
 import (
+	"context"
 	"os"
 	"regexp"
 	"time"
@@ -15,11 +16,11 @@ type HostnameDiscoveryEngine struct {
 	Config
 }
 
-func (h *HostnameDiscoveryEngine) Setup() (err error) {
+func (h *HostnameDiscoveryEngine) Setup(_ context.Context) (err error) {
 	return
 }
 
-func (h *HostnameDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
+func (h *HostnameDiscoveryEngine) Watch(_ context.Context, callback func(data map[string]string, err error)) {
 	ticker := time.NewTicker(h.Interval)
 
 	for {

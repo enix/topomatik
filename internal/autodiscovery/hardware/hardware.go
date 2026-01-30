@@ -1,6 +1,7 @@
 package hardware
 
 import (
+	"context"
 	"time"
 
 	"github.com/jaypipes/ghw"
@@ -14,11 +15,11 @@ type HardwareDiscoveryEngine struct {
 	Config
 }
 
-func (h *HardwareDiscoveryEngine) Setup() (err error) {
+func (h *HardwareDiscoveryEngine) Setup(_ context.Context) (err error) {
 	return
 }
 
-func (h *HardwareDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
+func (h *HardwareDiscoveryEngine) Watch(_ context.Context, callback func(data map[string]string, err error)) {
 	ticker := time.NewTicker(h.Interval)
 
 	for {
