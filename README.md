@@ -119,7 +119,7 @@ Below you'll find detailed information about each supported engine
 
 #### LLDP
 
-LLDP (Link Layer Discovery Protocol) is a vendor-neutral Layer 2 protocol that enables network devices to automatically discover and share information about their identity, capabilities, and neighboring devices on a local network.
+LLDP (Link Layer Discovery Protocol) is a vendor-neutral Layer 2 protocol that enables network devices to automatically discover and share information about their identity, capabilities, and neighboring device on a local network link (physical cable or veth pair).
 
 It can be used in both bare-metal and virtualised environments to inform nodes about the underlying topology (eg: Proxmox PVE). In bare-metal environments, it must be enabled at the network device level (e.g., switches). In virtualised environments, you'll need to install the lldpd service on your hypervisors.
 
