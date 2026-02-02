@@ -21,7 +21,7 @@ Learn more about topology in Kubernetes:
 ## ✨ Features
 
 - Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node labels based on autodiscovered infrastructure
-- Multiple auto-discovery engines. Currently only LLDP is supported (more coming soon™)
+- Multiple auto-discovery engines (LLDP, DMI, local file, hostname, etc.).
 - Works with both virtualised and bare-metal nodes
 - Runs as a DaemonSet; updates topology even when nodes are live-migrated
 
