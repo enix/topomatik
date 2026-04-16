@@ -3,14 +3,12 @@ package network
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/vishvananda/netlink"
 )
 
 type Config struct {
-	Interval  time.Duration `yaml:"interval" validate:"required"`
-	Interface string        `yaml:"interface"`
+	Interface string `yaml:"interface"`
 }
 
 type NetworkDiscoveryEngine struct {
@@ -22,39 +20,76 @@ func (n *NetworkDiscoveryEngine) Setup() (err error) {
 }
 
 func (n *NetworkDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
-	var route *netlink.Route
-	var err error
+	routeUpdates := make(chan netlink.RouteUpdate)
+	if err := netlink.RouteSubscribe(routeUpdates, nil); err != nil {
+		callback(nil, fmt.Errorf("failed to subscribe to route updates: %w", err))
+		return
+	}
 
-	ticker := time.NewTicker(n.Interval)
+	addrUpdates := make(chan netlink.AddrUpdate)
+	if err := netlink.AddrSubscribe(addrUpdates, nil); err != nil {
+		callback(nil, fmt.Errorf("failed to subscribe to address updates: %w", err))
+		return
+	}
+
+	n.emit(callback)
 
 	for {
-		if n.Interface == "" {
-			route, err = GetDefaultRoute()
-		} else {
-			route, err = getRouteByInterfaceName(n.Interface)
+		select {
+		case _, ok := <-routeUpdates:
+			if !ok {
+				callback(nil, errors.New("route subscription closed"))
+				return
+			}
+		case _, ok := <-addrUpdates:
+			if !ok {
+				callback(nil, errors.New("address subscription closed"))
+				return
+			}
 		}
-
-		if err != nil {
-			callback(nil, err)
-			return
-		}
-
-		if route.Family != netlink.FAMILY_V4 {
-			callback(nil, fmt.Errorf("unsupported IP family (code: %d), must be IPV4", route.Family))
-			return
-		}
-
-		ones, _ := route.Src.DefaultMask().Size()
-		callback(map[string]string{
-			"subnet": fmt.Sprintf("%s/%d", route.Src.Mask(route.Src.DefaultMask()), ones),
-		}, nil)
-
-		<-ticker.C
+		n.emit(callback)
 	}
 }
 
-func GetDefaultRoute() (*netlink.Route, error) {
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_ALL)
+func (n *NetworkDiscoveryEngine) emit(callback func(data map[string]string, err error)) {
+	link, err := n.getLink()
+	if err != nil {
+		callback(nil, err)
+		return
+	}
+
+	addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+	if err != nil {
+		callback(nil, err)
+		return
+	}
+
+	if len(addrs) == 0 {
+		callback(nil, fmt.Errorf("no IPv4 address on interface %q", link.Attrs().Name))
+		return
+	}
+
+	ipnet := addrs[0].IPNet
+	ones, _ := ipnet.Mask.Size()
+
+	callback(map[string]string{
+		"subnet": fmt.Sprintf("%s/%d", ipnet.IP.Mask(ipnet.Mask), ones),
+	}, nil)
+}
+
+func (n *NetworkDiscoveryEngine) getLink() (netlink.Link, error) {
+	if n.Interface == "" || n.Interface == "auto" {
+		route, err := GetDefaultRoute(netlink.FAMILY_V4)
+		if err != nil {
+			return nil, err
+		}
+		return netlink.LinkByIndex(route.LinkIndex)
+	}
+	return netlink.LinkByName(n.Interface)
+}
+
+func GetDefaultRoute(family int) (*netlink.Route, error) {
+	routes, err := netlink.RouteList(nil, family)
 	if err != nil {
 		return nil, err
 	}
@@ -71,24 +106,4 @@ func GetDefaultRoute() (*netlink.Route, error) {
 	}
 
 	return nil, errors.New("default route not found")
-}
-
-func getRouteByInterfaceName(interfaceName string) (*netlink.Route, error) {
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_ALL)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, route := range routes {
-		link, err := netlink.LinkByIndex(route.LinkIndex)
-		if err != nil {
-			return nil, err
-		}
-
-		if link.Attrs().Name == interfaceName {
-			return &route, nil
-		}
-	}
-
-	return nil, fmt.Errorf("route with interface name \"%s\" not found", interfaceName)
 }

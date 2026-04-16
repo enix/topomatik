@@ -85,7 +85,7 @@ func (l *LLDPDiscoveryEngine) Watch(callback func(data map[string]string, err er
 }
 
 func getDefaultRouteInterfaceName() (string, error) {
-	defaultRoute, err := network.GetDefaultRoute()
+	defaultRoute, err := network.GetDefaultRoute(netlink.FAMILY_ALL)
 	if err != nil {
 		return "", err
 	}
