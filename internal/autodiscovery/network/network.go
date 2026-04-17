@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 type Config struct {
@@ -20,13 +21,13 @@ func (n *NetworkDiscoveryEngine) Setup() (err error) {
 }
 
 func (n *NetworkDiscoveryEngine) Watch(callback func(data map[string]string, err error)) {
-	routeUpdates := make(chan netlink.RouteUpdate)
+	routeUpdates := make(chan netlink.RouteUpdate, 16)
 	if err := netlink.RouteSubscribe(routeUpdates, nil); err != nil {
 		callback(nil, fmt.Errorf("failed to subscribe to route updates: %w", err))
 		return
 	}
 
-	addrUpdates := make(chan netlink.AddrUpdate)
+	addrUpdates := make(chan netlink.AddrUpdate, 16)
 	if err := netlink.AddrSubscribe(addrUpdates, nil); err != nil {
 		callback(nil, fmt.Errorf("failed to subscribe to address updates: %w", err))
 		return
@@ -70,6 +71,12 @@ func (n *NetworkDiscoveryEngine) emit(callback func(data map[string]string, err 
 	}
 
 	ipnet := addrs[0].IPNet
+	for _, addr := range addrs {
+		if addr.Flags&unix.IFA_F_SECONDARY == 0 {
+			ipnet = addr.IPNet
+			break
+		}
+	}
 	ones, _ := ipnet.Mask.Size()
 
 	callback(map[string]string{

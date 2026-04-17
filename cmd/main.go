@@ -78,5 +78,6 @@ func main() {
 	if config.Network.Enabled {
 		ctrl.Register("network", &network.NetworkDiscoveryEngine{Config: config.Network.Config})
 	}
+
 	panic(ctrl.Start())
 }
