@@ -186,7 +186,7 @@ This engine allows to read information about the hardware (equivalent to `dmidec
 
 | Name      | Description                                  | Default value |
 | --------- | -------------------------------------------- | ------------- |
-| enabled   | Enable or disable this auto discovery engine | false          |
+| enabled   | Enable or disable this auto discovery engine | false         |
 | interval  | Polling interval of the hardware information | `<required>`  |
 
 ##### Available template variables from the hardware engine
@@ -212,7 +212,7 @@ hostname:
 
 | Name      | Description                                  | Default value |
 | --------- | -------------------------------------------- | ------------- |
-| enabled   | Enable or disable this auto discovery engine | false          |
+| enabled   | Enable or disable this auto discovery engine | false         |
 | interval  | Polling interval of the hostname information | `<required>`  |
 | pattern   | Regexp with named groups                     | -             |
 
@@ -232,6 +232,8 @@ Reads network information of the device in order to group machines by subnet. IP
 | interface | Interface name to get the subnet from, or `auto` (or empty) to use the default route    | auto          |
 
 ##### Available template variables from the network engine
+
+The only variable available here is `network.subnet`, which is in CIDR form, minus the fact that `/` is replace by `_` since Kubernetes labels doesn't support `/` character (eg. 192.168.1.0_24).
 
 | Name           | Description                                      |
 | ---------------| ------------------------------------------------ |
