@@ -127,21 +127,27 @@ func (c *Controller) reconcileNode() error {
 		return nil
 	}
 
-	labels := map[string]string{}
+	labels := map[string]any{}
 	for label, tmpl := range c.labelTemplates {
 		value := &bytes.Buffer{}
 		err := tmpl.Execute(value, c.discoveryData)
 		if err != nil {
 			slog.Warn("could not render template", "label", label, "error", err)
-		} else {
-			sanitizedValue := labelRegexp.ReplaceAllString(value.String(), "_")
-			sanitizedValue = strings.TrimFunc(sanitizedValue, func(r rune) bool {
-				return strings.Contains("_.-", string(r))
-			})
-			if node.Labels[label] != sanitizedValue {
-				labels[label] = sanitizedValue
-				slog.Info("label changed", "label", label, "value", sanitizedValue)
-			}
+			continue
+		}
+		sanitizedValue := labelRegexp.ReplaceAllString(value.String(), "_")
+		sanitizedValue = strings.TrimFunc(sanitizedValue, func(r rune) bool {
+			return strings.Contains("_.-", string(r))
+		})
+
+		currentValue, exists := node.Labels[label]
+		switch {
+		case sanitizedValue == "" && exists:
+			labels[label] = nil
+			slog.Info("label removed", "label", label)
+		case sanitizedValue != "" && currentValue != sanitizedValue:
+			labels[label] = sanitizedValue
+			slog.Info("label changed", "label", label, "value", sanitizedValue)
 		}
 	}
 
