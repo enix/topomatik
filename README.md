@@ -18,6 +18,18 @@ Learn more about topology in Kubernetes:
 - [https://kubernetes.io/docs/reference/labels-annotations-taints/#topologykubernetesiozone]
 - [https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/]
 
+## 🎤 Watch our talk at CND France 2026
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=TCLYktup5TU">
+        <img alt="Topomatik talk at CND France 2026" src="https://img.youtube.com/vi/TCLYktup5TU/maxresdefault.jpg" width="640" />
+    </a>
+</p>
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=TCLYktup5TU">▶️ Video</a> · <a href="https://drive.google.com/file/d/1avsxPE0UAZ0y49dM4Hs4eP0oafd3C2lw/view">📑 Slides</a>
+</p>
+
 ## ✨ Features
 
 - Automagically updates the `topology.kubernetes.io/zone` and `topology.kubernetes.io/region` node labels based on autodiscovered infrastructure
