@@ -14,17 +14,24 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/network"
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type Config struct {
-	LabelTemplates                map[string]string `yaml:"labelTemplates"`
-	MinimumReconciliationInterval time.Duration     `yaml:"minimumReconciliationInterval"`
+	LabelTemplates                map[string]string        `yaml:"labelTemplates"`
+	TaintTemplates                map[string]TaintTemplate `yaml:"taintTemplates" validate:"dive"`
+	MinimumReconciliationInterval time.Duration            `yaml:"minimumReconciliationInterval"`
 
 	LLDP     EngineConfig[lldp.Config]     `yaml:"lldp"`
 	Files    files.Config                  `yaml:"files" validate:"dive"`
 	Hardware EngineConfig[hardware.Config] `yaml:"hardware"`
 	Hostname EngineConfig[hostname.Config] `yaml:"hostname"`
 	Network  EngineConfig[network.Config]  `yaml:"network"`
+}
+
+type TaintTemplate struct {
+	Value  string             `yaml:"value"`
+	Effect corev1.TaintEffect `yaml:"effect" validate:"oneof=NoSchedule PreferNoSchedule NoExecute"`
 }
 
 type EngineConfig[T any] struct {
