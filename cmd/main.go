@@ -69,7 +69,7 @@ func main() {
 
 	scheduler := schedulers.NewSometimesWithDebounceChannel(config.MinimumReconciliationInterval)
 
-	ctrl, err := controller.New(k8sClientset, scheduler, config.LabelTemplates)
+	ctrl, err := controller.New(k8sClientset, scheduler, config.LabelTemplates, config.TaintTemplates)
 	if err != nil {
 		panic(err)
 	}
