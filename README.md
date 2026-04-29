@@ -76,7 +76,7 @@ spec:
 - [x] Local file / HTTP discovery engine #3
 - [x] Hostname / node name discovery engine #4
 - [x] Network config discovery engine #5
-- [ ] Taint management #6
+- [x] Taint management #6
 - [ ] Prometheus Exporter #7
 - [ ] Better RBAC / admission webhook #8
 
@@ -113,6 +113,24 @@ The [Sprig library](http://masterminds.github.io/sprig/) is available for advanc
 > Labels must be an empty string or consist of alphanumeric characters, "-", "\_" or ".", and must start and end with an alphanumeric character. Invalid characters will be replaced by "\_" and leading or trailing non alpha-numeric characters will be removed.
 >
 > Example: "@@@foo+bar.foobar----." will be rendered as "foo_bar.foobar".
+
+### Taint Templates
+
+The `taintTemplates` section defines which Kubernetes taints Topomatik will manage. The map is keyed by the taint key; each entry has a `value` (Go template, same engine and Sprig functions as label templates) and a static `effect`.
+
+```yaml
+taintTemplates:
+  topology.plaffitt.kubernetes.io/specialized:
+    value: "{{ .hostname.zone }}"
+    effect: NoSchedule
+```
+
+Allowed effects: `NoSchedule`, `PreferNoSchedule`, `NoExecute`.
+
+Rendered values are sanitized using the same rules as label values (see the note above).
+
+> [!NOTE]
+> Topomatik only manages taints whose key appears in `taintTemplates`. Taints set by other controllers or by the user (e.g. `kubectl taint`) on different keys are preserved on every reconciliation. Removing an entry from `taintTemplates` does not remove the corresponding taint from the node; remove it manually with `kubectl taint nodes <name> <key>-`. A given key can carry only one effect at a time through Topomatik.
 
 ### Auto-Discovery Engine Configuration
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/enix/topomatik/internal/autodiscovery"
+	"github.com/enix/topomatik/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,20 +28,27 @@ type ReconciliationScheduler interface {
 	C() <-chan struct{}
 }
 
+type taintTemplate struct {
+	value  *template.Template
+	effect corev1.TaintEffect
+}
+
 type Controller struct {
 	nodeName       string
 	clientset      *kubernetes.Clientset
 	labelTemplates map[string]*template.Template
+	taintTemplates map[string]*taintTemplate
 	engines        []*autodiscovery.Engine
 	discoveryData  map[string]map[string]string
 	scheduler      ReconciliationScheduler
 }
 
-func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, labelTemplates map[string]string) (*Controller, error) {
+func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, labelTemplates map[string]string, taintTemplates map[string]config.TaintTemplate) (*Controller, error) {
 	controller := &Controller{
 		nodeName:       os.Getenv("NODE_NAME"),
 		clientset:      clientset,
 		labelTemplates: map[string]*template.Template{},
+		taintTemplates: map[string]*taintTemplate{},
 		engines:        []*autodiscovery.Engine{},
 		discoveryData:  map[string]map[string]string{},
 		scheduler:      scheduler,
@@ -50,6 +58,17 @@ func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, lab
 		controller.labelTemplates[label] = template.New(label).Funcs(sprig.FuncMap()).Option("missingkey=error")
 		if _, err := controller.labelTemplates[label].Parse(tmpl); err != nil {
 			return nil, err
+		}
+	}
+
+	for key, t := range taintTemplates {
+		parsed := template.New("taint:" + key).Funcs(sprig.FuncMap()).Option("missingkey=error")
+		if _, err := parsed.Parse(t.Value); err != nil {
+			return nil, err
+		}
+		controller.taintTemplates[key] = &taintTemplate{
+			value:  parsed,
+			effect: t.Effect,
 		}
 	}
 
@@ -119,6 +138,13 @@ func (c *Controller) watchNode() error {
 	return nil
 }
 
+func sanitizeLabelValue(value string) string {
+	sanitized := labelRegexp.ReplaceAllString(value, "_")
+	return strings.TrimFunc(sanitized, func(r rune) bool {
+		return strings.Contains("_.-", string(r))
+	})
+}
+
 func (c *Controller) reconcileNode() error {
 	slog.Debug("reconciling node")
 	node, err := c.clientset.CoreV1().Nodes().Get(context.Background(), c.nodeName, metav1.GetOptions{})
@@ -133,28 +159,30 @@ func (c *Controller) reconcileNode() error {
 		err := tmpl.Execute(value, c.discoveryData)
 		if err != nil {
 			slog.Warn("could not render template", "label", label, "error", err)
-		} else {
-			sanitizedValue := labelRegexp.ReplaceAllString(value.String(), "_")
-			sanitizedValue = strings.TrimFunc(sanitizedValue, func(r rune) bool {
-				return strings.Contains("_.-", string(r))
-			})
-			if node.Labels[label] != sanitizedValue {
-				labels[label] = sanitizedValue
-				slog.Info("label changed", "label", label, "value", sanitizedValue)
-			}
+			continue
+		}
+		sanitizedValue := sanitizeLabelValue(value.String())
+		if node.Labels[label] != sanitizedValue {
+			labels[label] = sanitizedValue
+			slog.Info("label changed", "label", label, "value", sanitizedValue)
 		}
 	}
 
-	if len(labels) == 0 {
-		slog.Debug("no label changes detected")
+	desiredTaints, taintsChanged := c.computeDesiredTaints(node)
+
+	if len(labels) == 0 && taintsChanged == 0 {
+		slog.Debug("no changes detected")
 		return nil
 	}
 
-	patch := map[string]any{
-		"metadata": map[string]any{
-			"labels": labels,
-		},
+	patch := map[string]any{}
+	if len(labels) > 0 {
+		patch["metadata"] = map[string]any{"labels": labels}
 	}
+	if taintsChanged > 0 {
+		patch["spec"] = map[string]any{"taints": desiredTaints}
+	}
+
 	patchBytes, err := json.Marshal(patch)
 	if err != nil {
 		return fmt.Errorf("failed to marshal patch: %w", err)
@@ -165,7 +193,48 @@ func (c *Controller) reconcileNode() error {
 		return fmt.Errorf("could not patch node %s: %w", c.nodeName, err)
 	}
 
-	slog.Info("node labels patched", "count", len(labels))
+	slog.Info("node patched", "labels", len(labels), "taints", taintsChanged)
 
 	return nil
+}
+
+func (c *Controller) computeDesiredTaints(node *corev1.Node) ([]corev1.Taint, int) {
+	if len(c.taintTemplates) == 0 {
+		return nil, 0
+	}
+
+	currentByKey := map[string]corev1.Taint{}
+	for _, t := range node.Spec.Taints {
+		currentByKey[t.Key] = t
+	}
+
+	desired := make([]corev1.Taint, 0, len(node.Spec.Taints))
+	for _, t := range node.Spec.Taints {
+		if _, managed := c.taintTemplates[t.Key]; !managed {
+			desired = append(desired, t)
+		}
+	}
+
+	changed := 0
+	for key, tmpl := range c.taintTemplates {
+		buf := &bytes.Buffer{}
+		if err := tmpl.value.Execute(buf, c.discoveryData); err != nil {
+			slog.Warn("could not render template", "taint", key, "error", err)
+			if existing, ok := currentByKey[key]; ok {
+				desired = append(desired, existing)
+			}
+			continue
+		}
+		sanitizedValue := sanitizeLabelValue(buf.String())
+		taint := corev1.Taint{Key: key, Value: sanitizedValue, Effect: tmpl.effect}
+		desired = append(desired, taint)
+
+		existing, ok := currentByKey[key]
+		if !ok || existing.Value != taint.Value || existing.Effect != taint.Effect {
+			changed++
+			slog.Info("taint changed", "key", key, "value", taint.Value, "effect", taint.Effect)
+		}
+	}
+
+	return desired, changed
 }
