@@ -1,0 +1,22 @@
+minimumReconciliationInterval: 30s
+
+labelTemplates:
+  topology/zone: "{{ .hostname.zone }}"
+
+taintTemplates:
+  specialized:
+    value: "{{ .hostname.zone }}"
+    effect: NoSchedule
+
+hardware:
+  enabled: true
+  interval: 10s
+
+hostname:
+  enabled: true
+  interval: 5s
+  pattern: "(?P<zone>[a-z]+)-(?P<rack>[a-z]+)-(?P<node>[0-9]+)$"
+
+network:
+  enabled: true
+  interval: 5s
