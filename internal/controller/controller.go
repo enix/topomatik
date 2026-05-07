@@ -35,7 +35,7 @@ type taintTemplate struct {
 
 type Controller struct {
 	nodeName       string
-	clientset      *kubernetes.Clientset
+	clientset      kubernetes.Interface
 	labelTemplates map[string]*template.Template
 	taintTemplates map[string]*taintTemplate
 	engines        []*autodiscovery.Engine
@@ -43,7 +43,7 @@ type Controller struct {
 	scheduler      ReconciliationScheduler
 }
 
-func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, labelTemplates map[string]string, taintTemplates map[string]config.TaintTemplate) (*Controller, error) {
+func New(clientset kubernetes.Interface, scheduler ReconciliationScheduler, labelTemplates map[string]string, taintTemplates map[string]config.TaintTemplate) (*Controller, error) {
 	parsedLabels, err := parseLabelTemplates(labelTemplates)
 	if err != nil {
 		return nil, err
