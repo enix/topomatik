@@ -2,13 +2,19 @@ package controller
 
 import (
 	"encoding/json"
-	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/enix/topomatik/internal/config"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	sortTaintsByKey   = cmpopts.SortSlices(func(a, b corev1.Taint) bool { return a.Key < b.Key })
+	sortStringsSlice  = cmpopts.SortSlices(func(a, b string) bool { return a < b })
+	equateEmptySlices = cmpopts.EquateEmpty()
 )
 
 func newTestController(t *testing.T, templates map[string]config.TaintTemplate, data map[string]map[string]string) *Controller {
@@ -216,49 +222,14 @@ func TestComputeTaintOps(t *testing.T) {
 
 			gotUpsert, gotDelete := c.computeTaintOps(node)
 
-			if !equalTaints(gotUpsert, tt.wantUpsert) {
-				t.Errorf("upsert mismatch\n got: %+v\nwant: %+v", gotUpsert, tt.wantUpsert)
+			if diff := cmp.Diff(tt.wantUpsert, gotUpsert, sortTaintsByKey, equateEmptySlices); diff != "" {
+				t.Errorf("upsert mismatch (-want +got):\n%s", diff)
 			}
-			if !equalStrings(gotDelete, tt.wantDelete) {
-				t.Errorf("delete keys mismatch\n got: %+v\nwant: %+v", gotDelete, tt.wantDelete)
+			if diff := cmp.Diff(tt.wantDelete, gotDelete, sortStringsSlice, equateEmptySlices); diff != "" {
+				t.Errorf("delete keys mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
-}
-
-func equalTaints(a, b []corev1.Taint) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	if len(a) == 0 {
-		return true
-	}
-	return reflect.DeepEqual(sortTaints(a), sortTaints(b))
-}
-
-func sortTaints(taints []corev1.Taint) []corev1.Taint {
-	out := append([]corev1.Taint(nil), taints...)
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Key != out[j].Key {
-			return out[i].Key < out[j].Key
-		}
-		return out[i].Effect < out[j].Effect
-	})
-	return out
-}
-
-func equalStrings(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	if len(a) == 0 {
-		return true
-	}
-	x := append([]string(nil), a...)
-	y := append([]string(nil), b...)
-	sort.Strings(x)
-	sort.Strings(y)
-	return reflect.DeepEqual(x, y)
 }
 
 func TestComputeLabelPatch(t *testing.T) {
@@ -381,8 +352,8 @@ func TestComputeLabelPatch(t *testing.T) {
 
 			got := c.computeLabelPatch(node)
 
-			if !reflect.DeepEqual(got, tt.wantPatch) {
-				t.Errorf("label patch mismatch\n got: %#v\nwant: %#v", got, tt.wantPatch)
+			if diff := cmp.Diff(tt.wantPatch, got); diff != "" {
+				t.Errorf("label patch mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -448,8 +419,8 @@ func TestBuildNodeStrategicMergePatch(t *testing.T) {
 				t.Fatalf("unmarshal want: %v", err)
 			}
 
-			if !reflect.DeepEqual(gotAny, wantAny) {
-				t.Errorf("patch mismatch\n got: %s\nwant: %s", got, tt.wantJSON)
+			if diff := cmp.Diff(wantAny, gotAny); diff != "" {
+				t.Errorf("patch mismatch (-want +got):\n%s\nraw got: %s", diff, got)
 			}
 		})
 	}
