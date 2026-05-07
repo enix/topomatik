@@ -96,7 +96,7 @@ func (c *Controller) Register(name string, strategy autodiscovery.DiscoveryStrat
 	c.engines = append(c.engines, autodiscovery.NewEngine(name, strategy))
 }
 
-func (c *Controller) Start() error {
+func (c *Controller) Start(ctx context.Context) error {
 	engineNames := make([]string, 0, len(c.engines))
 	for _, engine := range c.engines {
 		engineNames = append(engineNames, engine.Name())
@@ -105,17 +105,20 @@ func (c *Controller) Start() error {
 
 	dataChannel := make(chan autodiscovery.EnginePayload)
 	for _, engine := range c.engines {
-		if err := engine.Start(dataChannel); err != nil {
+		if err := engine.Start(ctx, dataChannel); err != nil {
 			return err
 		}
 	}
 
-	if err := c.watchNode(); err != nil {
+	if err := c.watchNode(ctx); err != nil {
 		return err
 	}
 
 	for {
 		select {
+		case <-ctx.Done():
+			slog.Info("controller stopping", "reason", ctx.Err())
+			return ctx.Err()
 		case payload := <-dataChannel:
 			slog.Debug("received payload from engine", "engine", payload.EngineName, "data", payload.Data)
 			c.discoveryData[payload.EngineName] = payload.Data
@@ -128,8 +131,8 @@ func (c *Controller) Start() error {
 	}
 }
 
-func (c *Controller) watchNode() error {
-	watchInterface, err := c.clientset.CoreV1().Nodes().Watch(context.Background(), metav1.ListOptions{})
+func (c *Controller) watchNode(ctx context.Context) error {
+	watchInterface, err := c.clientset.CoreV1().Nodes().Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
