@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -218,9 +217,8 @@ func TestComputeTaintOps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newTestController(t, tt.templates, tt.data)
-			node := &corev1.Node{Spec: corev1.NodeSpec{Taints: tt.nodeTaints}}
 
-			gotUpsert, gotDelete := c.computeTaintOps(node)
+			gotUpsert, gotDelete := computeTaintOps(c.taintTemplates, c.discoveryData, tt.nodeTaints)
 
 			if diff := cmp.Diff(tt.wantUpsert, gotUpsert, sortTaintsByKey, equateEmptySlices); diff != "" {
 				t.Errorf("upsert mismatch (-want +got):\n%s", diff)
@@ -346,11 +344,8 @@ func TestComputeLabelPatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newTestControllerWithLabels(t, tt.templates, tt.data)
-			node := &corev1.Node{
-				ObjectMeta: metav1.ObjectMeta{Labels: tt.nodeLabels},
-			}
 
-			got := c.computeLabelPatch(node)
+			got := computeLabelPatch(c.labelTemplates, c.discoveryData, tt.nodeLabels)
 
 			if diff := cmp.Diff(tt.wantPatch, got); diff != "" {
 				t.Errorf("label patch mismatch (-want +got):\n%s", diff)

@@ -157,8 +157,8 @@ func (c *Controller) reconcileNode() error {
 		return nil
 	}
 
-	labels := c.computeLabelPatch(node)
-	upsertTaints, deleteTaintKeys := c.computeTaintOps(node)
+	labels := computeLabelPatch(c.labelTemplates, c.discoveryData, node.Labels)
+	upsertTaints, deleteTaintKeys := computeTaintOps(c.taintTemplates, c.discoveryData, node.Spec.Taints)
 
 	if len(labels) == 0 && len(upsertTaints) == 0 && len(deleteTaintKeys) == 0 {
 		slog.Debug("no changes detected")
@@ -180,18 +180,22 @@ func (c *Controller) reconcileNode() error {
 	return nil
 }
 
-func (c *Controller) computeLabelPatch(node *corev1.Node) map[string]any {
+func computeLabelPatch(
+	templates map[string]*template.Template,
+	discoveryData map[string]map[string]string,
+	nodeLabels map[string]string,
+) map[string]any {
 	labels := map[string]any{}
 
-	for label, tmpl := range c.labelTemplates {
+	for label, tmpl := range templates {
 		value := &bytes.Buffer{}
-		if err := tmpl.Execute(value, c.discoveryData); err != nil {
+		if err := tmpl.Execute(value, discoveryData); err != nil {
 			slog.Warn("could not render template", "label", label, "error", err)
 			continue
 		}
 		sanitizedValue := sanitizeLabelValue(value.String())
 
-		currentValue, exists := node.Labels[label]
+		currentValue, exists := nodeLabels[label]
 		switch {
 		case sanitizedValue == "" && exists:
 			labels[label] = nil
@@ -227,19 +231,23 @@ func buildNodeStrategicMergePatch(labels map[string]any, upsertTaints []corev1.T
 	return json.Marshal(patch)
 }
 
-func (c *Controller) computeTaintOps(node *corev1.Node) (upsert []corev1.Taint, deleteKeys []string) {
-	if len(c.taintTemplates) == 0 {
+func computeTaintOps(
+	templates map[string]*taintTemplate,
+	discoveryData map[string]map[string]string,
+	currentTaints []corev1.Taint,
+) (upsert []corev1.Taint, deleteKeys []string) {
+	if len(templates) == 0 {
 		return nil, nil
 	}
 
 	currentByKey := map[string]corev1.Taint{}
-	for _, t := range node.Spec.Taints {
+	for _, t := range currentTaints {
 		currentByKey[t.Key] = t
 	}
 
-	for key, tmpl := range c.taintTemplates {
+	for key, tmpl := range templates {
 		effectBuf := &bytes.Buffer{}
-		if err := tmpl.effect.Execute(effectBuf, c.discoveryData); err != nil {
+		if err := tmpl.effect.Execute(effectBuf, discoveryData); err != nil {
 			slog.Warn("could not render effect template", "taint", key, "error", err)
 			continue
 		}
@@ -259,7 +267,7 @@ func (c *Controller) computeTaintOps(node *corev1.Node) (upsert []corev1.Taint, 
 		}
 
 		valueBuf := &bytes.Buffer{}
-		if err := tmpl.value.Execute(valueBuf, c.discoveryData); err != nil {
+		if err := tmpl.value.Execute(valueBuf, discoveryData); err != nil {
 			slog.Warn("could not render value template", "taint", key, "error", err)
 			continue
 		}
