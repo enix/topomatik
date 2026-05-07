@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/enix/topomatik/internal/autodiscovery/files"
 	"github.com/enix/topomatik/internal/autodiscovery/hardware"
@@ -94,5 +99,11 @@ func main() {
 		ctrl.Register("network", &network.NetworkDiscoveryEngine{Config: config.Network.Config})
 	}
 
-	panic(ctrl.Start())
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err := ctrl.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		slog.Error("controller stopped with error", "error", err)
+		os.Exit(1)
+	}
 }

@@ -33,9 +33,9 @@ func (e *Engine) Name() string {
 	return e.name
 }
 
-func (e *Engine) Start(dataChannel chan<- EnginePayload) error {
+func (e *Engine) Start(ctx context.Context, dataChannel chan<- EnginePayload) error {
 	logger := slog.Default().With("engine", e.name)
-	ctx := logging.NewContext(context.Background(), logger)
+	ctx = logging.NewContext(ctx, logger)
 
 	if err := e.strategy.Setup(ctx); err != nil {
 		return err
