@@ -14,12 +14,11 @@ import (
 	"github.com/enix/topomatik/internal/autodiscovery/network"
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v2"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type Config struct {
 	LabelTemplates                map[string]string        `yaml:"labelTemplates"`
-	TaintTemplates                map[string]TaintTemplate `yaml:"taintTemplates" validate:"dive"`
+	TaintTemplates                map[string]TaintTemplate `yaml:"taintTemplates"`
 	MinimumReconciliationInterval time.Duration            `yaml:"minimumReconciliationInterval"`
 
 	LLDP     EngineConfig[lldp.Config]     `yaml:"lldp"`
@@ -30,8 +29,8 @@ type Config struct {
 }
 
 type TaintTemplate struct {
-	Value  string             `yaml:"value"`
-	Effect corev1.TaintEffect `yaml:"effect" validate:"oneof=NoSchedule PreferNoSchedule NoExecute"`
+	Value  string `yaml:"value"`
+	Effect string `yaml:"effect"`
 }
 
 type EngineConfig[T any] struct {
