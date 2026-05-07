@@ -157,11 +157,35 @@ func (c *Controller) reconcileNode() error {
 		return nil
 	}
 
+	labels := c.computeLabelPatch(node)
+	upsertTaints, deleteTaintKeys := c.computeTaintOps(node)
+
+	if len(labels) == 0 && len(upsertTaints) == 0 && len(deleteTaintKeys) == 0 {
+		slog.Debug("no changes detected")
+		return nil
+	}
+
+	patchBytes, err := buildNodeStrategicMergePatch(labels, upsertTaints, deleteTaintKeys)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+
+	_, err = c.clientset.CoreV1().Nodes().Patch(context.Background(), node.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
+	if err != nil {
+		return fmt.Errorf("could not patch node %s: %w", c.nodeName, err)
+	}
+
+	slog.Info("node patched", "labels", len(labels), "taintsUpserted", len(upsertTaints), "taintsDeleted", len(deleteTaintKeys))
+
+	return nil
+}
+
+func (c *Controller) computeLabelPatch(node *corev1.Node) map[string]any {
 	labels := map[string]any{}
+
 	for label, tmpl := range c.labelTemplates {
 		value := &bytes.Buffer{}
-		err := tmpl.Execute(value, c.discoveryData)
-		if err != nil {
+		if err := tmpl.Execute(value, c.discoveryData); err != nil {
 			slog.Warn("could not render template", "label", label, "error", err)
 			continue
 		}
@@ -178,41 +202,29 @@ func (c *Controller) reconcileNode() error {
 		}
 	}
 
-	upsertTaints, deleteTaintKeys := c.computeTaintOps(node)
+	return labels
+}
 
-	if len(labels) == 0 && len(upsertTaints) == 0 && len(deleteTaintKeys) == 0 {
-		slog.Debug("no changes detected")
-		return nil
-	}
-
+func buildNodeStrategicMergePatch(labels map[string]any, upsertTaints []corev1.Taint, deleteTaintKeys []string) ([]byte, error) {
 	patch := map[string]any{}
 	if len(labels) > 0 {
 		patch["metadata"] = map[string]any{"labels": labels}
 	}
+
 	if len(upsertTaints) > 0 || len(deleteTaintKeys) > 0 {
 		taints := make([]any, 0, len(upsertTaints)+len(deleteTaintKeys))
 		for _, t := range upsertTaints {
 			taints = append(taints, t)
 		}
+
 		for _, key := range deleteTaintKeys {
 			taints = append(taints, map[string]any{"key": key, "$patch": "delete"})
 		}
+
 		patch["spec"] = map[string]any{"taints": taints}
 	}
 
-	patchBytes, err := json.Marshal(patch)
-	if err != nil {
-		return fmt.Errorf("failed to marshal patch: %w", err)
-	}
-
-	_, err = c.clientset.CoreV1().Nodes().Patch(context.Background(), node.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
-	if err != nil {
-		return fmt.Errorf("could not patch node %s: %w", c.nodeName, err)
-	}
-
-	slog.Info("node patched", "labels", len(labels), "taintsUpserted", len(upsertTaints), "taintsDeleted", len(deleteTaintKeys))
-
-	return nil
+	return json.Marshal(patch)
 }
 
 func (c *Controller) computeTaintOps(node *corev1.Node) (upsert []corev1.Taint, deleteKeys []string) {
