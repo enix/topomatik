@@ -178,9 +178,9 @@ func (c *Controller) reconcileNode() error {
 		}
 	}
 
-	desiredTaints, taintsChanged := c.computeDesiredTaints(node)
+	upsertTaints, deleteTaintKeys := c.computeTaintOps(node)
 
-	if len(labels) == 0 && taintsChanged == 0 {
+	if len(labels) == 0 && len(upsertTaints) == 0 && len(deleteTaintKeys) == 0 {
 		slog.Debug("no changes detected")
 		return nil
 	}
@@ -189,8 +189,15 @@ func (c *Controller) reconcileNode() error {
 	if len(labels) > 0 {
 		patch["metadata"] = map[string]any{"labels": labels}
 	}
-	if taintsChanged > 0 {
-		patch["spec"] = map[string]any{"taints": desiredTaints}
+	if len(upsertTaints) > 0 || len(deleteTaintKeys) > 0 {
+		taints := make([]any, 0, len(upsertTaints)+len(deleteTaintKeys))
+		for _, t := range upsertTaints {
+			taints = append(taints, t)
+		}
+		for _, key := range deleteTaintKeys {
+			taints = append(taints, map[string]any{"key": key, "$patch": "delete"})
+		}
+		patch["spec"] = map[string]any{"taints": taints}
 	}
 
 	patchBytes, err := json.Marshal(patch)
@@ -198,19 +205,19 @@ func (c *Controller) reconcileNode() error {
 		return fmt.Errorf("failed to marshal patch: %w", err)
 	}
 
-	_, err = c.clientset.CoreV1().Nodes().Patch(context.Background(), node.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
+	_, err = c.clientset.CoreV1().Nodes().Patch(context.Background(), node.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{})
 	if err != nil {
 		return fmt.Errorf("could not patch node %s: %w", c.nodeName, err)
 	}
 
-	slog.Info("node patched", "labels", len(labels), "taints", taintsChanged)
+	slog.Info("node patched", "labels", len(labels), "taintsUpserted", len(upsertTaints), "taintsDeleted", len(deleteTaintKeys))
 
 	return nil
 }
 
-func (c *Controller) computeDesiredTaints(node *corev1.Node) ([]corev1.Taint, int) {
+func (c *Controller) computeTaintOps(node *corev1.Node) (upsert []corev1.Taint, deleteKeys []string) {
 	if len(c.taintTemplates) == 0 {
-		return nil, 0
+		return nil, nil
 	}
 
 	currentByKey := map[string]corev1.Taint{}
@@ -218,32 +225,17 @@ func (c *Controller) computeDesiredTaints(node *corev1.Node) ([]corev1.Taint, in
 		currentByKey[t.Key] = t
 	}
 
-	desired := make([]corev1.Taint, 0, len(node.Spec.Taints))
-	for _, t := range node.Spec.Taints {
-		if _, managed := c.taintTemplates[t.Key]; !managed {
-			desired = append(desired, t)
-		}
-	}
-
-	preserveExisting := func(key string) {
-		if existing, ok := currentByKey[key]; ok {
-			desired = append(desired, existing)
-		}
-	}
-
-	changed := 0
 	for key, tmpl := range c.taintTemplates {
 		effectBuf := &bytes.Buffer{}
 		if err := tmpl.effect.Execute(effectBuf, c.discoveryData); err != nil {
 			slog.Warn("could not render effect template", "taint", key, "error", err)
-			preserveExisting(key)
 			continue
 		}
 
 		effect := corev1.TaintEffect(strings.TrimSpace(effectBuf.String()))
 		if effect == "" {
 			if _, existed := currentByKey[key]; existed {
-				changed++
+				deleteKeys = append(deleteKeys, key)
 				slog.Info("taint removed", "key", key)
 			}
 			continue
@@ -251,28 +243,25 @@ func (c *Controller) computeDesiredTaints(node *corev1.Node) ([]corev1.Taint, in
 
 		if !isValidTaintEffect(effect) {
 			slog.Warn("invalid taint effect", "taint", key, "effect", effect)
-			preserveExisting(key)
 			continue
 		}
 
 		valueBuf := &bytes.Buffer{}
 		if err := tmpl.value.Execute(valueBuf, c.discoveryData); err != nil {
 			slog.Warn("could not render value template", "taint", key, "error", err)
-			preserveExisting(key)
 			continue
 		}
 
 		taint := corev1.Taint{Key: key, Value: sanitizeLabelValue(valueBuf.String()), Effect: effect}
-		desired = append(desired, taint)
-
-		existing, ok := currentByKey[key]
-		if !ok || existing.Value != taint.Value || existing.Effect != taint.Effect {
-			changed++
-			slog.Info("taint changed", "key", key, "value", taint.Value, "effect", taint.Effect)
+		if existing, ok := currentByKey[key]; ok && existing.Value == taint.Value && existing.Effect == taint.Effect {
+			continue
 		}
+
+		upsert = append(upsert, taint)
+		slog.Info("taint changed", "key", key, "value", taint.Value, "effect", taint.Effect)
 	}
 
-	return desired, changed
+	return upsert, deleteKeys
 }
 
 func isValidTaintEffect(effect corev1.TaintEffect) bool {
