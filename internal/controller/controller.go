@@ -44,39 +44,52 @@ type Controller struct {
 }
 
 func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, labelTemplates map[string]string, taintTemplates map[string]config.TaintTemplate) (*Controller, error) {
-	controller := &Controller{
+	parsedLabels, err := parseLabelTemplates(labelTemplates)
+	if err != nil {
+		return nil, err
+	}
+	parsedTaints, err := parseTaintTemplates(taintTemplates)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Controller{
 		nodeName:       os.Getenv("NODE_NAME"),
 		clientset:      clientset,
-		labelTemplates: map[string]*template.Template{},
-		taintTemplates: map[string]*taintTemplate{},
+		labelTemplates: parsedLabels,
+		taintTemplates: parsedTaints,
 		engines:        []*autodiscovery.Engine{},
 		discoveryData:  map[string]map[string]string{},
 		scheduler:      scheduler,
-	}
+	}, nil
+}
 
-	for label, tmpl := range labelTemplates {
-		controller.labelTemplates[label] = template.New(label).Funcs(sprig.FuncMap()).Option("missingkey=error")
-		if _, err := controller.labelTemplates[label].Parse(tmpl); err != nil {
+func parseLabelTemplates(in map[string]string) (map[string]*template.Template, error) {
+	out := map[string]*template.Template{}
+	for label, tmpl := range in {
+		parsed, err := template.New(label).Funcs(sprig.FuncMap()).Option("missingkey=error").Parse(tmpl)
+		if err != nil {
 			return nil, err
 		}
+		out[label] = parsed
 	}
+	return out, nil
+}
 
-	for key, t := range taintTemplates {
-		value := template.New("taint:" + key + ":value").Funcs(sprig.FuncMap()).Option("missingkey=error")
-		if _, err := value.Parse(t.Value); err != nil {
+func parseTaintTemplates(in map[string]config.TaintTemplate) (map[string]*taintTemplate, error) {
+	out := map[string]*taintTemplate{}
+	for key, t := range in {
+		value, err := template.New("taint:" + key + ":value").Funcs(sprig.FuncMap()).Option("missingkey=error").Parse(t.Value)
+		if err != nil {
 			return nil, err
 		}
-		effect := template.New("taint:" + key + ":effect").Funcs(sprig.FuncMap()).Option("missingkey=error")
-		if _, err := effect.Parse(t.Effect); err != nil {
+		effect, err := template.New("taint:" + key + ":effect").Funcs(sprig.FuncMap()).Option("missingkey=error").Parse(t.Effect)
+		if err != nil {
 			return nil, err
 		}
-		controller.taintTemplates[key] = &taintTemplate{
-			value:  value,
-			effect: effect,
-		}
+		out[key] = &taintTemplate{value: value, effect: effect}
 	}
-
-	return controller, nil
+	return out, nil
 }
 
 func (c *Controller) Register(name string, strategy autodiscovery.DiscoveryStrategy) {
