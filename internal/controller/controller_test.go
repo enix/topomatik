@@ -4,29 +4,18 @@ import (
 	"reflect"
 	"sort"
 	"testing"
-	"text/template"
 
-	"github.com/Masterminds/sprig"
 	"github.com/enix/topomatik/internal/config"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func newTestController(t *testing.T, templates map[string]config.TaintTemplate, data map[string]map[string]string) *Controller {
 	t.Helper()
-	c := &Controller{
-		taintTemplates: map[string]*taintTemplate{},
-		discoveryData:  data,
+	c, err := New(nil, nil, nil, templates)
+	if err != nil {
+		t.Fatalf("New: %v", err)
 	}
-	for key, tmpl := range templates {
-		parsed := template.New("taint:" + key).Funcs(sprig.FuncMap()).Option("missingkey=error")
-		if _, err := parsed.Parse(tmpl.Value); err != nil {
-			t.Fatalf("parse template %q: %v", key, err)
-		}
-		c.taintTemplates[key] = &taintTemplate{
-			value:  parsed,
-			effect: tmpl.Effect,
-		}
-	}
+	c.discoveryData = data
 	return c
 }
 
@@ -50,7 +39,7 @@ func TestComputeDesiredTaints(t *testing.T) {
 		{
 			name: "adds new managed taint",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "{{ .hostname.zone }}", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "{{ .hostname.zone }}", Effect: "NoSchedule"},
 			},
 			data: map[string]map[string]string{
 				"hostname": {"zone": "eu-west"},
@@ -63,7 +52,7 @@ func TestComputeDesiredTaints(t *testing.T) {
 		{
 			name: "no-op when managed taint already matches",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "{{ .hostname.zone }}", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "{{ .hostname.zone }}", Effect: "NoSchedule"},
 			},
 			data: map[string]map[string]string{
 				"hostname": {"zone": "eu-west"},
@@ -79,7 +68,7 @@ func TestComputeDesiredTaints(t *testing.T) {
 		{
 			name: "updates managed taint when value changes",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "{{ .hostname.zone }}", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "{{ .hostname.zone }}", Effect: "NoSchedule"},
 			},
 			data: map[string]map[string]string{
 				"hostname": {"zone": "eu-west"},
@@ -95,7 +84,7 @@ func TestComputeDesiredTaints(t *testing.T) {
 		{
 			name: "updates managed taint when effect changes",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "fixed", Effect: corev1.TaintEffectNoExecute},
+				"specialized": {Value: "fixed", Effect: "NoExecute"},
 			},
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "fixed", Effect: corev1.TaintEffectNoSchedule},
@@ -106,9 +95,22 @@ func TestComputeDesiredTaints(t *testing.T) {
 			wantChanged: 1,
 		},
 		{
+			name: "templated effect renders from discovery data",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "fixed", Effect: "{{ .hostname.effect }}"},
+			},
+			data: map[string]map[string]string{
+				"hostname": {"effect": "PreferNoSchedule"},
+			},
+			wantTaints: []corev1.Taint{
+				{Key: "specialized", Value: "fixed", Effect: corev1.TaintEffectPreferNoSchedule},
+			},
+			wantChanged: 1,
+		},
+		{
 			name: "preserves unmanaged taints",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "fixed", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "fixed", Effect: "NoSchedule"},
 			},
 			nodeTaints: []corev1.Taint{
 				{Key: "node.kubernetes.io/unreachable", Value: "", Effect: corev1.TaintEffectNoExecute},
@@ -123,7 +125,7 @@ func TestComputeDesiredTaints(t *testing.T) {
 		{
 			name: "sanitizes rendered values",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "@@@foo+bar.foobar----.", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "@@@foo+bar.foobar----.", Effect: "NoSchedule"},
 			},
 			wantTaints: []corev1.Taint{
 				{Key: "specialized", Value: "foo_bar.foobar", Effect: corev1.TaintEffectNoSchedule},
@@ -131,9 +133,9 @@ func TestComputeDesiredTaints(t *testing.T) {
 			wantChanged: 1,
 		},
 		{
-			name: "render error preserves existing taint",
+			name: "value render error preserves existing taint",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "{{ .nope.value }}", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "{{ .nope.value }}", Effect: "NoSchedule"},
 			},
 			data: map[string]map[string]string{},
 			nodeTaints: []corev1.Taint{
@@ -145,19 +147,79 @@ func TestComputeDesiredTaints(t *testing.T) {
 			wantChanged: 0,
 		},
 		{
-			name: "render error with no existing taint skips entry",
+			name: "value render error with no existing taint skips entry",
 			templates: map[string]config.TaintTemplate{
-				"specialized": {Value: "{{ .nope.value }}", Effect: corev1.TaintEffectNoSchedule},
+				"specialized": {Value: "{{ .nope.value }}", Effect: "NoSchedule"},
 			},
 			data:        map[string]map[string]string{},
 			wantTaints:  nil,
 			wantChanged: 0,
 		},
 		{
+			name: "effect render error preserves existing taint",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "fixed", Effect: "{{ .nope.effect }}"},
+			},
+			data: map[string]map[string]string{},
+			nodeTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+			wantTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+			wantChanged: 0,
+		},
+		{
+			name: "invalid rendered effect preserves existing taint",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "fixed", Effect: "Bogus"},
+			},
+			nodeTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+			wantTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+			wantChanged: 0,
+		},
+		{
+			name: "empty effect removes existing managed taint",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "fixed", Effect: ""},
+			},
+			nodeTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+			wantTaints:  nil,
+			wantChanged: 1,
+		},
+		{
+			name: "empty effect from template removes existing managed taint",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "fixed", Effect: "{{ .hostname.effect }}"},
+			},
+			data: map[string]map[string]string{
+				"hostname": {"effect": ""},
+			},
+			nodeTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+			wantTaints:  nil,
+			wantChanged: 1,
+		},
+		{
+			name: "empty effect with no existing taint is a no-op",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "fixed", Effect: ""},
+			},
+			wantTaints:  nil,
+			wantChanged: 0,
+		},
+		{
 			name: "counts multiple managed changes",
 			templates: map[string]config.TaintTemplate{
-				"a": {Value: "x", Effect: corev1.TaintEffectNoSchedule},
-				"b": {Value: "y", Effect: corev1.TaintEffectNoExecute},
+				"a": {Value: "x", Effect: "NoSchedule"},
+				"b": {Value: "y", Effect: "NoExecute"},
 			},
 			wantTaints: []corev1.Taint{
 				{Key: "a", Value: "x", Effect: corev1.TaintEffectNoSchedule},

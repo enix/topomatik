@@ -30,7 +30,7 @@ type ReconciliationScheduler interface {
 
 type taintTemplate struct {
 	value  *template.Template
-	effect corev1.TaintEffect
+	effect *template.Template
 }
 
 type Controller struct {
@@ -62,13 +62,17 @@ func New(clientset *kubernetes.Clientset, scheduler ReconciliationScheduler, lab
 	}
 
 	for key, t := range taintTemplates {
-		parsed := template.New("taint:" + key).Funcs(sprig.FuncMap()).Option("missingkey=error")
-		if _, err := parsed.Parse(t.Value); err != nil {
+		value := template.New("taint:" + key + ":value").Funcs(sprig.FuncMap()).Option("missingkey=error")
+		if _, err := value.Parse(t.Value); err != nil {
+			return nil, err
+		}
+		effect := template.New("taint:" + key + ":effect").Funcs(sprig.FuncMap()).Option("missingkey=error")
+		if _, err := effect.Parse(t.Effect); err != nil {
 			return nil, err
 		}
 		controller.taintTemplates[key] = &taintTemplate{
-			value:  parsed,
-			effect: t.Effect,
+			value:  value,
+			effect: effect,
 		}
 	}
 
@@ -221,18 +225,44 @@ func (c *Controller) computeDesiredTaints(node *corev1.Node) ([]corev1.Taint, in
 		}
 	}
 
+	preserveExisting := func(key string) {
+		if existing, ok := currentByKey[key]; ok {
+			desired = append(desired, existing)
+		}
+	}
+
 	changed := 0
 	for key, tmpl := range c.taintTemplates {
-		buf := &bytes.Buffer{}
-		if err := tmpl.value.Execute(buf, c.discoveryData); err != nil {
-			slog.Warn("could not render template", "taint", key, "error", err)
-			if existing, ok := currentByKey[key]; ok {
-				desired = append(desired, existing)
+		effectBuf := &bytes.Buffer{}
+		if err := tmpl.effect.Execute(effectBuf, c.discoveryData); err != nil {
+			slog.Warn("could not render effect template", "taint", key, "error", err)
+			preserveExisting(key)
+			continue
+		}
+
+		effect := corev1.TaintEffect(strings.TrimSpace(effectBuf.String()))
+		if effect == "" {
+			if _, existed := currentByKey[key]; existed {
+				changed++
+				slog.Info("taint removed", "key", key)
 			}
 			continue
 		}
-		sanitizedValue := sanitizeLabelValue(buf.String())
-		taint := corev1.Taint{Key: key, Value: sanitizedValue, Effect: tmpl.effect}
+
+		if !isValidTaintEffect(effect) {
+			slog.Warn("invalid taint effect", "taint", key, "effect", effect)
+			preserveExisting(key)
+			continue
+		}
+
+		valueBuf := &bytes.Buffer{}
+		if err := tmpl.value.Execute(valueBuf, c.discoveryData); err != nil {
+			slog.Warn("could not render value template", "taint", key, "error", err)
+			preserveExisting(key)
+			continue
+		}
+
+		taint := corev1.Taint{Key: key, Value: sanitizeLabelValue(valueBuf.String()), Effect: effect}
 		desired = append(desired, taint)
 
 		existing, ok := currentByKey[key]
@@ -243,4 +273,12 @@ func (c *Controller) computeDesiredTaints(node *corev1.Node) ([]corev1.Taint, in
 	}
 
 	return desired, changed
+}
+
+func isValidTaintEffect(effect corev1.TaintEffect) bool {
+	switch effect {
+	case corev1.TaintEffectNoSchedule, corev1.TaintEffectPreferNoSchedule, corev1.TaintEffectNoExecute:
+		return true
+	}
+	return false
 }

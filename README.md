@@ -116,7 +116,7 @@ The [Sprig library](http://masterminds.github.io/sprig/) is available for advanc
 
 ### Taint Templates
 
-The `taintTemplates` section defines which Kubernetes taints Topomatik will manage. The map is keyed by the taint key; each entry has a `value` (Go template, same engine and Sprig functions as label templates) and a static `effect`.
+The `taintTemplates` section defines which Kubernetes taints Topomatik will manage. The map is keyed by the taint key; each entry has a `value` and an `effect`, both Go templates (same engine and Sprig functions as label templates).
 
 ```yaml
 taintTemplates:
@@ -125,12 +125,24 @@ taintTemplates:
     effect: NoSchedule
 ```
 
-Allowed effects: `NoSchedule`, `PreferNoSchedule`, `NoExecute`.
+Allowed rendered effects: `NoSchedule`, `PreferNoSchedule`, `NoExecute`. An effect that renders to an unsupported value preserves the existing taint on the node and logs a warning.
 
 Rendered values are sanitized using the same rules as label values (see the note above).
 
+If `effect` renders to an empty string, the taint is not applied; if it already exists on the node it will be removed. This lets you conditionally manage a taint, e.g.:
+
+```yaml
+taintTemplates:
+  topology.plaffitt.kubernetes.io/specialized:
+    value: "{{ .hostname.zone }}"
+    effect: '{{ if eq .hostname.zone "eu-west" }}NoSchedule{{ end }}'
+```
+
 > [!NOTE]
-> Topomatik only manages taints whose key appears in `taintTemplates`. Taints set by other controllers or by the user (e.g. `kubectl taint`) on different keys are preserved on every reconciliation. Removing an entry from `taintTemplates` does not remove the corresponding taint from the node; remove it manually with `kubectl taint nodes <name> <key>-`. A given key can carry only one effect at a time through Topomatik.
+> Conditional management of labels is driven by an empty rendered `value`, but for taints it is driven by an empty rendered `effect`. A taint with an empty `value` is still a valid Kubernetes taint, whereas an empty `effect` is the natural signal that the taint should not exist.
+
+> [!NOTE]
+> Topomatik only manages taints whose key appears in `taintTemplates`. Taints set by other controllers or by the user (e.g. `kubectl taint`) on different keys are preserved on every reconciliation. Removing an entry from `taintTemplates` does not remove the corresponding taint from the node; remove it manually with `kubectl taint nodes <name> <key>-` or render the `effect` to an empty string.
 
 ### Auto-Discovery Engine Configuration
 
