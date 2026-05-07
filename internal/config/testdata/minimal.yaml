@@ -1,0 +1,2 @@
+labelTemplates:
+  topology/zone: "{{ .hostname.zone }}"

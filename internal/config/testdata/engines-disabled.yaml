@@ -1,0 +1,6 @@
+hardware:
+  enabled: false
+hostname:
+  enabled: false
+network:
+  enabled: false

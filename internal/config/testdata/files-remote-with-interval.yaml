@@ -1,0 +1,4 @@
+files:
+  zone:
+    path: http://localhost/zone
+    interval: 5s
