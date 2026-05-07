@@ -28,7 +28,7 @@ jobs:
           args: --timeout 5m --verbose
 
       - name: Unit tests
-        run: go test -v ./...
+        run: go test -race -v ./...
 
   linting:
     runs-on: ubuntu-24.04
