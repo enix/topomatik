@@ -19,22 +19,20 @@ func newTestController(t *testing.T, templates map[string]config.TaintTemplate, 
 	return c
 }
 
-func TestComputeDesiredTaints(t *testing.T) {
+func TestComputeTaintOps(t *testing.T) {
 	tests := []struct {
-		name        string
-		templates   map[string]config.TaintTemplate
-		data        map[string]map[string]string
-		nodeTaints  []corev1.Taint
-		wantTaints  []corev1.Taint
-		wantChanged int
+		name       string
+		templates  map[string]config.TaintTemplate
+		data       map[string]map[string]string
+		nodeTaints []corev1.Taint
+		wantUpsert []corev1.Taint
+		wantDelete []string
 	}{
 		{
-			name: "no templates returns nil and leaves taints untouched",
+			name: "no templates returns no ops",
 			nodeTaints: []corev1.Taint{
 				{Key: "foo", Value: "bar", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints:  nil,
-			wantChanged: 0,
 		},
 		{
 			name: "adds new managed taint",
@@ -44,10 +42,9 @@ func TestComputeDesiredTaints(t *testing.T) {
 			data: map[string]map[string]string{
 				"hostname": {"zone": "eu-west"},
 			},
-			wantTaints: []corev1.Taint{
+			wantUpsert: []corev1.Taint{
 				{Key: "specialized", Value: "eu-west", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantChanged: 1,
 		},
 		{
 			name: "no-op when managed taint already matches",
@@ -60,10 +57,6 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "eu-west", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
-				{Key: "specialized", Value: "eu-west", Effect: corev1.TaintEffectNoSchedule},
-			},
-			wantChanged: 0,
 		},
 		{
 			name: "updates managed taint when value changes",
@@ -76,10 +69,9 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "us-east", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
+			wantUpsert: []corev1.Taint{
 				{Key: "specialized", Value: "eu-west", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantChanged: 1,
 		},
 		{
 			name: "updates managed taint when effect changes",
@@ -89,10 +81,9 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "fixed", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
+			wantUpsert: []corev1.Taint{
 				{Key: "specialized", Value: "fixed", Effect: corev1.TaintEffectNoExecute},
 			},
-			wantChanged: 1,
 		},
 		{
 			name: "templated effect renders from discovery data",
@@ -102,13 +93,12 @@ func TestComputeDesiredTaints(t *testing.T) {
 			data: map[string]map[string]string{
 				"hostname": {"effect": "PreferNoSchedule"},
 			},
-			wantTaints: []corev1.Taint{
+			wantUpsert: []corev1.Taint{
 				{Key: "specialized", Value: "fixed", Effect: corev1.TaintEffectPreferNoSchedule},
 			},
-			wantChanged: 1,
 		},
 		{
-			name: "preserves unmanaged taints",
+			name: "ignores unmanaged taints",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "fixed", Effect: "NoSchedule"},
 			},
@@ -116,24 +106,21 @@ func TestComputeDesiredTaints(t *testing.T) {
 				{Key: "node.kubernetes.io/unreachable", Value: "", Effect: corev1.TaintEffectNoExecute},
 				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
-				{Key: "node.kubernetes.io/unreachable", Value: "", Effect: corev1.TaintEffectNoExecute},
+			wantUpsert: []corev1.Taint{
 				{Key: "specialized", Value: "fixed", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantChanged: 1,
 		},
 		{
 			name: "sanitizes rendered values",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "@@@foo+bar.foobar----.", Effect: "NoSchedule"},
 			},
-			wantTaints: []corev1.Taint{
+			wantUpsert: []corev1.Taint{
 				{Key: "specialized", Value: "foo_bar.foobar", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantChanged: 1,
 		},
 		{
-			name: "value render error preserves existing taint",
+			name: "value render error skips taint",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "{{ .nope.value }}", Effect: "NoSchedule"},
 			},
@@ -141,22 +128,16 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
-				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
-			},
-			wantChanged: 0,
 		},
 		{
-			name: "value render error with no existing taint skips entry",
+			name: "value render error with no existing taint is a no-op",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "{{ .nope.value }}", Effect: "NoSchedule"},
 			},
-			data:        map[string]map[string]string{},
-			wantTaints:  nil,
-			wantChanged: 0,
+			data: map[string]map[string]string{},
 		},
 		{
-			name: "effect render error preserves existing taint",
+			name: "effect render error skips taint",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "fixed", Effect: "{{ .nope.effect }}"},
 			},
@@ -164,23 +145,15 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
-				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
-			},
-			wantChanged: 0,
 		},
 		{
-			name: "invalid rendered effect preserves existing taint",
+			name: "invalid rendered effect skips taint",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "fixed", Effect: "Bogus"},
 			},
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints: []corev1.Taint{
-				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
-			},
-			wantChanged: 0,
 		},
 		{
 			name: "empty effect removes existing managed taint",
@@ -190,8 +163,7 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints:  nil,
-			wantChanged: 1,
+			wantDelete: []string{"specialized"},
 		},
 		{
 			name: "empty effect from template removes existing managed taint",
@@ -204,28 +176,24 @@ func TestComputeDesiredTaints(t *testing.T) {
 			nodeTaints: []corev1.Taint{
 				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
 			},
-			wantTaints:  nil,
-			wantChanged: 1,
+			wantDelete: []string{"specialized"},
 		},
 		{
 			name: "empty effect with no existing taint is a no-op",
 			templates: map[string]config.TaintTemplate{
 				"specialized": {Value: "fixed", Effect: ""},
 			},
-			wantTaints:  nil,
-			wantChanged: 0,
 		},
 		{
-			name: "counts multiple managed changes",
+			name: "multiple managed upserts",
 			templates: map[string]config.TaintTemplate{
 				"a": {Value: "x", Effect: "NoSchedule"},
 				"b": {Value: "y", Effect: "NoExecute"},
 			},
-			wantTaints: []corev1.Taint{
+			wantUpsert: []corev1.Taint{
 				{Key: "a", Value: "x", Effect: corev1.TaintEffectNoSchedule},
 				{Key: "b", Value: "y", Effect: corev1.TaintEffectNoExecute},
 			},
-			wantChanged: 2,
 		},
 	}
 
@@ -234,13 +202,13 @@ func TestComputeDesiredTaints(t *testing.T) {
 			c := newTestController(t, tt.templates, tt.data)
 			node := &corev1.Node{Spec: corev1.NodeSpec{Taints: tt.nodeTaints}}
 
-			gotTaints, gotChanged := c.computeDesiredTaints(node)
+			gotUpsert, gotDelete := c.computeTaintOps(node)
 
-			if !equalTaints(gotTaints, tt.wantTaints) {
-				t.Errorf("desired taints mismatch\n got: %+v\nwant: %+v", gotTaints, tt.wantTaints)
+			if !equalTaints(gotUpsert, tt.wantUpsert) {
+				t.Errorf("upsert mismatch\n got: %+v\nwant: %+v", gotUpsert, tt.wantUpsert)
 			}
-			if gotChanged != tt.wantChanged {
-				t.Errorf("changed count = %d, want %d", gotChanged, tt.wantChanged)
+			if !equalStrings(gotDelete, tt.wantDelete) {
+				t.Errorf("delete keys mismatch\n got: %+v\nwant: %+v", gotDelete, tt.wantDelete)
 			}
 		})
 	}
@@ -265,4 +233,18 @@ func sortTaints(taints []corev1.Taint) []corev1.Taint {
 		return out[i].Effect < out[j].Effect
 	})
 	return out
+}
+
+func equalStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	if len(a) == 0 {
+		return true
+	}
+	x := append([]string(nil), a...)
+	y := append([]string(nil), b...)
+	sort.Strings(x)
+	sort.Strings(y)
+	return reflect.DeepEqual(x, y)
 }
