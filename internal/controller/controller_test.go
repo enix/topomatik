@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"testing"
+	"text/template"
 
 	"github.com/enix/topomatik/internal/config"
 	"github.com/google/go-cmp/cmp"
@@ -16,24 +17,22 @@ var (
 	equateEmptySlices = cmpopts.EquateEmpty()
 )
 
-func newTestController(t *testing.T, templates map[string]config.TaintTemplate, data map[string]map[string]string) *Controller {
+func mustParseLabelTemplates(t *testing.T, in map[string]string) map[string]*template.Template {
 	t.Helper()
-	c, err := New(nil, nil, nil, templates)
+	parsed, err := parseLabelTemplates(in)
 	if err != nil {
-		t.Fatalf("New: %v", err)
+		t.Fatalf("parseLabelTemplates: %v", err)
 	}
-	c.discoveryData = data
-	return c
+	return parsed
 }
 
-func newTestControllerWithLabels(t *testing.T, labelTemplates map[string]string, data map[string]map[string]string) *Controller {
+func mustParseTaintTemplates(t *testing.T, in map[string]config.TaintTemplate) map[string]*taintTemplate {
 	t.Helper()
-	c, err := New(nil, nil, labelTemplates, nil)
+	parsed, err := parseTaintTemplates(in)
 	if err != nil {
-		t.Fatalf("New: %v", err)
+		t.Fatalf("parseTaintTemplates: %v", err)
 	}
-	c.discoveryData = data
-	return c
+	return parsed
 }
 
 func TestComputeTaintOps(t *testing.T) {
@@ -216,9 +215,9 @@ func TestComputeTaintOps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := newTestController(t, tt.templates, tt.data)
+			templates := mustParseTaintTemplates(t, tt.templates)
 
-			gotUpsert, gotDelete := computeTaintOps(c.taintTemplates, c.discoveryData, tt.nodeTaints)
+			gotUpsert, gotDelete := computeTaintOps(templates, tt.data, tt.nodeTaints)
 
 			if diff := cmp.Diff(tt.wantUpsert, gotUpsert, sortTaintsByKey, equateEmptySlices); diff != "" {
 				t.Errorf("upsert mismatch (-want +got):\n%s", diff)
@@ -343,9 +342,9 @@ func TestComputeLabelPatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := newTestControllerWithLabels(t, tt.templates, tt.data)
+			templates := mustParseLabelTemplates(t, tt.templates)
 
-			got := computeLabelPatch(c.labelTemplates, c.discoveryData, tt.nodeLabels)
+			got := computeLabelPatch(templates, tt.data, tt.nodeLabels)
 
 			if diff := cmp.Diff(tt.wantPatch, got); diff != "" {
 				t.Errorf("label patch mismatch (-want +got):\n%s", diff)
