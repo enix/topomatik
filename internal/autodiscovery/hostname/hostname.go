@@ -30,21 +30,25 @@ func (h *HostnameDiscoveryEngine) Watch(_ context.Context, callback func(data ma
 			continue
 		}
 
-		data := map[string]string{
-			"value": hostname,
-		}
-
-		if h.Pattern != nil {
-			if submatches := h.Pattern.FindStringSubmatch(hostname); submatches != nil {
-				for _, subexpName := range h.Pattern.SubexpNames() {
-					if subexpName != "" {
-						data[subexpName] = submatches[h.Pattern.SubexpIndex(subexpName)]
-					}
-				}
-			}
-		}
-
-		callback(data, nil)
+		callback(extractHostnameData(hostname, h.Pattern), nil)
 		<-ticker.C
 	}
+}
+
+func extractHostnameData(hostname string, pattern *regexp.Regexp) map[string]string {
+	data := map[string]string{"value": hostname}
+	if pattern == nil {
+		return data
+	}
+	submatches := pattern.FindStringSubmatch(hostname)
+	if submatches == nil {
+		return data
+	}
+	for _, name := range pattern.SubexpNames() {
+		if name == "" {
+			continue
+		}
+		data[name] = submatches[pattern.SubexpIndex(name)]
+	}
+	return data
 }
