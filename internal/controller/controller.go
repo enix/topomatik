@@ -23,6 +23,8 @@ import (
 
 var labelRegexp = regexp.MustCompile(`[^A-Za-z0-9._-]`)
 
+const maxLabelValueLength = 63
+
 type ReconciliationScheduler interface {
 	Trigger()
 	C() <-chan struct{}
@@ -210,6 +212,10 @@ func computeLabelPatch(
 			continue
 		}
 		sanitizedValue := sanitizeLabelValue(value.String())
+		if len(sanitizedValue) > maxLabelValueLength {
+			slog.Warn("label value exceeds Kubernetes length limit, skipping", "label", label, "length", len(sanitizedValue), "limit", maxLabelValueLength)
+			continue
+		}
 
 		currentValue, exists := nodeLabels[label]
 		switch {
@@ -288,7 +294,13 @@ func computeTaintOps(
 			continue
 		}
 
-		taint := corev1.Taint{Key: key, Value: sanitizeLabelValue(valueBuf.String()), Effect: effect}
+		sanitizedValue := sanitizeLabelValue(valueBuf.String())
+		if len(sanitizedValue) > maxLabelValueLength {
+			slog.Warn("taint value exceeds Kubernetes length limit, skipping", "taint", key, "length", len(sanitizedValue), "limit", maxLabelValueLength)
+			continue
+		}
+
+		taint := corev1.Taint{Key: key, Value: sanitizedValue, Effect: effect}
 		if existing, ok := currentByKey[key]; ok && existing.Value == taint.Value && existing.Effect == taint.Effect {
 			continue
 		}

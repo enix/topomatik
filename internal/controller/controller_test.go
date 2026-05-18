@@ -211,6 +211,25 @@ func TestComputeTaintOps(t *testing.T) {
 				{Key: "b", Value: "y", Effect: corev1.TaintEffectNoExecute},
 			},
 		},
+		{
+			name: "value exceeding length limit skips taint",
+			templates: map[string]config.TaintTemplate{
+				"specialized": {Value: "abcdefghij0123456789abcdefghij0123456789abcdefghij0123456789abcd", Effect: "NoSchedule"},
+			},
+			nodeTaints: []corev1.Taint{
+				{Key: "specialized", Value: "old", Effect: corev1.TaintEffectNoSchedule},
+			},
+		},
+		{
+			name: "value exceeding length limit does not block other taints",
+			templates: map[string]config.TaintTemplate{
+				"too-long": {Value: "abcdefghij0123456789abcdefghij0123456789abcdefghij0123456789abcd", Effect: "NoSchedule"},
+				"ok":       {Value: "fine", Effect: "NoSchedule"},
+			},
+			wantUpsert: []corev1.Taint{
+				{Key: "ok", Value: "fine", Effect: corev1.TaintEffectNoSchedule},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -337,6 +356,23 @@ func TestComputeLabelPatch(t *testing.T) {
 				"add":    "new",
 				"remove": nil,
 			},
+		},
+		{
+			name: "value exceeding length limit skips label",
+			templates: map[string]string{
+				"topology/zone": "abcdefghij0123456789abcdefghij0123456789abcdefghij0123456789abcd",
+			},
+			nodeLabels: map[string]string{"topology/zone": "old"},
+			wantPatch:  map[string]any{},
+		},
+		{
+			name: "value exceeding length limit does not block other labels",
+			templates: map[string]string{
+				"too-long": "abcdefghij0123456789abcdefghij0123456789abcdefghij0123456789abcd",
+				"ok":       "{{ .h.a }}",
+			},
+			data:      map[string]map[string]string{"h": {"a": "new"}},
+			wantPatch: map[string]any{"ok": "new"},
 		},
 	}
 
